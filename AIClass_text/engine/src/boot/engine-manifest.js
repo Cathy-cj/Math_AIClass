@@ -43,6 +43,7 @@
     'components/math-keyboard.js',
     'components/fill-keyboard.js',
     'components/latex.js',
+    'components/recognition-result.js',
     'components/hand-hint.js',
     'components/oral-input.js',
     'components/oral-card.js',
