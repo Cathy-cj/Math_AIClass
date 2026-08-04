@@ -2,6 +2,8 @@
 ;(function () {
   var INNER_SCROLL_BOTTOM_INSET = 20
 
+  var OUTER_NEED_PX = 12
+
   var followState = {
     raf: null,
     ro: null,
@@ -10,6 +12,7 @@
     anchor: null,
     stage: null,
     scrollEl: null,
+    pageEl: null,
     padding: 120,
     topPadding: 40,
     active: false,
@@ -18,31 +21,58 @@
     scrollPastEl: null,
     scrollPastGap: 8,
     preserveScroll: false,
-    _cancelFollow: null,
-    _scrollListeners: []
+    phase: null,
+    _innerScrollEl: null,
+    _innerAlignStart: false,
+    _innerPadding: INNER_SCROLL_BOTTOM_INSET,
+    _lockListeners: [],
+    _animFrom: 0,
+    _animTo: 0,
+    _animStart: null,
+    _animDuration: 0
   }
 
   function getStage() {
     return document.querySelector('.lf-stage')
   }
 
-  function detachScrollListeners() {
-    if (!followState._cancelFollow) return
-    followState._scrollListeners.forEach(function (entry) {
-      entry.el.removeEventListener(entry.type, followState._cancelFollow)
-    })
-    followState._scrollListeners = []
+  function blockUserScroll(e) {
+    e.preventDefault()
   }
 
-  function attachScrollListener(el, type) {
-    if (!el || !followState._cancelFollow) return
-    el.addEventListener(type, followState._cancelFollow, { passive: true })
-    followState._scrollListeners.push({ el: el, type: type })
+  function detachInputLock() {
+    followState._lockListeners.forEach(function (entry) {
+      entry.el.removeEventListener(entry.type, blockUserScroll)
+    })
+    followState._lockListeners = []
+  }
+
+  function attachInputLock(el, type) {
+    if (!el) return
+    el.addEventListener(type, blockUserScroll, { passive: false })
+    followState._lockListeners.push({ el: el, type: type })
+  }
+
+  function lockUserInput() {
+    detachInputLock()
+    var stage = followState.stage || getStage()
+    var inner = followState._innerScrollEl
+    var active = followState.scrollEl
+    ;[stage, inner, active].forEach(function (el) {
+      if (!el) return
+      attachInputLock(el, 'wheel')
+      attachInputLock(el, 'touchmove')
+    })
   }
 
   function stop() {
     followState.active = false
     followState._tickTarget = NaN
+    followState.phase = null
+    followState._animStart = null
+    followState._animDuration = 0
+    followState._animFrom = 0
+    followState._animTo = 0
     if (followState.raf) {
       cancelAnimationFrame(followState.raf)
       followState.raf = null
@@ -61,8 +91,10 @@
     followState.scrollPastEl = null
     followState.scrollPastGap = 8
     followState.preserveScroll = false
-    detachScrollListeners()
-    followState._cancelFollow = null
+    followState.pageEl = null
+    followState._innerScrollEl = null
+    followState._innerAlignStart = false
+    detachInputLock()
   }
 
   function getActiveScrollEl() {
@@ -95,23 +127,17 @@
     return isNaN(n) ? INNER_SCROLL_BOTTOM_INSET : n
   }
 
-  function scrollContentBottom(scrollEl) {
-    if (!scrollEl || !scrollEl.getBoundingClientRect) return 0
-    var stack = scrollEl.querySelector && scrollEl.querySelector('.course-scroll-stack')
-    var scope = stack || scrollEl
-    var bottom = scope.getBoundingClientRect().top
-    Array.prototype.forEach.call(scope.children, function (child) {
+  function stackContentBottom(scrollEl) {
+    if (!scrollEl || !scrollEl.querySelector) return 0
+    var stack = scrollEl.querySelector('.course-scroll-stack')
+    if (!stack) return 0
+    var bottom = stack.getBoundingClientRect().top
+    Array.prototype.forEach.call(stack.children, function (child) {
       if (!child.getBoundingClientRect) return
       if (child.classList && child.classList.contains('sf-scroll-spacer')) return
       bottom = Math.max(bottom, child.getBoundingClientRect().bottom)
-      var katex = child.querySelector && child.querySelector('.katex-html, .katex')
-      if (katex) bottom = Math.max(bottom, katex.getBoundingClientRect().bottom)
     })
     return bottom
-  }
-
-  function stackContentBottom(scrollEl) {
-    return scrollContentBottom(scrollEl)
   }
 
   function adjustScrollForBottomInset(scrollEl, target) {
@@ -268,8 +294,6 @@
   function measureBottomInScroll(scrollEl, el) {
     if (!scrollEl || !el) return 0
     var bottom = el.getBoundingClientRect().bottom
-    var katex = el.querySelector && el.querySelector('.katex-html, .katex')
-    if (katex) bottom = Math.max(bottom, katex.getBoundingClientRect().bottom)
     var container = el.classList && el.classList.contains('course-container')
       ? el
       : (el.closest ? el.closest('.course-container') : null)
@@ -282,8 +306,6 @@
         }
         if (last) {
           bottom = Math.max(bottom, last.getBoundingClientRect().bottom)
-          var lastKatex = last.querySelector && last.querySelector('.katex-html, .katex')
-          if (lastKatex) bottom = Math.max(bottom, lastKatex.getBoundingClientRect().bottom)
         }
       }
     }
@@ -342,12 +364,19 @@
     return reveal
   }
 
-  // 底部垫高保证可滚内容完全离开视口，同时仍可向上滚回查看
+  // 手写板保留在文档流中；底部垫高保证可滚动手写板完全离开视口，同时仍可向上滚回查看
   function ensureScrollPastCapacity(scrollEl, pastEl, topPadding) {
     if (!scrollEl || !pastEl) return
     var stack = getScrollStack(scrollEl)
     if (!stack) return
     var reveal = pickScrollPastReveal(pastEl)
+    var latest = findRevealBlock(followState.anchor, scrollEl)
+    if (latest && pastEl.compareDocumentPosition) {
+      var pos = pastEl.compareDocumentPosition(latest)
+      if (pos & Node.DOCUMENT_POSITION_FOLLOWING) {
+        reveal = latest
+      }
+    }
     if (!reveal) return
 
     var scaleY = getScrollElScaleY(scrollEl)
@@ -381,16 +410,41 @@
     }
   }
 
+  function collapseHandwritingPast(el) {
+    if (!el || !el.classList) return
+    el.classList.add('lf-block-handwriting--past')
+  }
+
+  function expandHandwritingPast(scrollEl) {
+    if (!scrollEl || !scrollEl.querySelectorAll) return
+    scrollEl.querySelectorAll('.lf-block-handwriting--past').forEach(function (node) {
+      node.classList.remove('lf-block-handwriting--past')
+      node.style.display = ''
+    })
+  }
+
   function measureScrollPastInner(scrollEl, el, gap) {
     if (!scrollEl || !el) return 0
     gap = gap != null ? gap : followState.scrollPastGap
+    collapseHandwritingPast(el)
     ensureScrollPastCapacity(scrollEl, el, followState.topPadding)
     void scrollEl.offsetHeight
     var scrollRect = scrollEl.getBoundingClientRect()
     var scaleY = getScrollElScaleY(scrollEl)
 
+    // 优先跟到「手写板之后的最新内容」（本步新 push），否则退回手写板后第一个节点
     var reveal = pickScrollPastReveal(el)
+    var latest = findRevealBlock(followState.anchor, scrollEl)
+    if (latest && el.compareDocumentPosition) {
+      var pos = el.compareDocumentPosition(latest)
+      if (pos & Node.DOCUMENT_POSITION_FOLLOWING) {
+        reveal = latest
+      }
+    }
     if (reveal) {
+      ensureScrollPastCapacity(scrollEl, el, followState.topPadding)
+      void scrollEl.offsetHeight
+      scrollRect = scrollEl.getBoundingClientRect()
       var visualTop = reveal.getBoundingClientRect().top - scrollRect.top
       var target = scrollEl.scrollTop + visualTop / scaleY - followState.topPadding
       target = Math.max(0, target)
@@ -524,6 +578,36 @@
     applyScrollTop(target)
   }
 
+  function resolvePageEl(anchor, opts) {
+    if (opts && opts.pageEl) return opts.pageEl
+    if (!anchor) return null
+    if (anchor.classList && anchor.classList.contains('course-container')) return anchor
+    return anchor.closest ? anchor.closest('.course-container') : null
+  }
+
+  function isTwoLayerFollow() {
+    var stage = followState.stage
+    var inner = followState._innerScrollEl
+    return !!(stage && inner && inner !== stage && !isStageScroll(inner))
+  }
+
+  function measureOuterPageTarget() {
+    var stage = followState.stage
+    var pageEl = followState.pageEl
+    if (!stage || !pageEl) return 0
+    return measureTopTargetStage(pageEl, stage, followState.topPadding)
+  }
+
+  function needsOuterPhase() {
+    if (!isTwoLayerFollow()) return false
+    var stage = followState.stage
+    if (!stage || !followState.pageEl) return false
+    if (stage.classList && stage.classList.contains('lf-scroll-locked')) return false
+    var maxScroll = stage.scrollHeight - stage.clientHeight
+    if (maxScroll <= 1) return false
+    return Math.abs(stage.scrollTop - measureOuterPageTarget()) > OUTER_NEED_PX
+  }
+
   function configureFollow(anchor, opts) {
     opts = opts || {}
     stop()
@@ -532,15 +616,21 @@
     var scrollEl = opts.scrollEl || stage
     var layoutScrollEl = opts.layoutScrollEl || scrollEl
     if (layoutScrollEl && opts.resetPast) {
+      expandHandwritingPast(layoutScrollEl)
       clearScrollCapacity(layoutScrollEl)
     }
+    var innerEl = (scrollEl && scrollEl !== stage && !isStageScroll(scrollEl)) ? scrollEl : null
     followState.anchor = anchor
     followState.stage = stage
     followState.scrollEl = scrollEl
+    followState.pageEl = resolvePageEl(anchor, opts)
+    followState._innerScrollEl = innerEl
+    followState._innerAlignStart = !!opts.alignStart
     followState.kbExtra = opts.keyboardExtra != null ? opts.keyboardExtra : 0
     followState.padding = opts.padding != null
       ? opts.padding
       : (isStageScroll(scrollEl) ? 120 : INNER_SCROLL_BOTTOM_INSET)
+    followState._innerPadding = followState.padding
     followState.topPadding = opts.topPadding != null ? opts.topPadding : 10
     followState.alignStart = !!opts.alignStart
     followState.scrollPastEl = opts.scrollPastEl || null
@@ -555,7 +645,121 @@
     applyScrollTop(pickRevealTarget(anchor))
   }
 
-  function tick() {
+  function armPhaseTimer(ms, onTimeout) {
+    if (followState.stopTimer) {
+      clearTimeout(followState.stopTimer)
+      followState.stopTimer = null
+    }
+    followState.stopTimer = setTimeout(function () {
+      followState.stopTimer = null
+      if (typeof onTimeout === 'function') onTimeout()
+    }, ms)
+  }
+
+  // 先加速再减速：两端柔、中间快，变速过程更明显
+  function easeInOutCubic(t) {
+    return t < 0.5
+      ? 4 * t * t * t
+      : 1 - Math.pow(-2 * t + 2, 3) / 2
+  }
+
+  function durationForDistance(dist, kind) {
+    var d = Math.abs(dist)
+    if (kind === 'outer') {
+      // 远距离翻页：约 0.55s～1.25s
+      return Math.min(1250, Math.max(560, 520 + d * 0.7))
+    }
+    // 内层跟最新：约 0.4s～1.0s
+    return Math.min(1000, Math.max(400, 340 + d * 0.9))
+  }
+
+  function startAnim(target) {
+    var scrollEl = getActiveScrollEl()
+    var from = scrollEl ? scrollEl.scrollTop : 0
+    followState._tickTarget = target
+    followState._animFrom = from
+    followState._animTo = target
+    followState._animStart = performance.now()
+    followState._animDuration = durationForDistance(
+      target - from,
+      followState.phase === 'outer' ? 'outer' : 'inner'
+    )
+  }
+
+  function beginInnerPhase(opts) {
+    opts = opts || {}
+    if (!followState.active) return
+    followState.phase = 'inner'
+    if (followState._innerScrollEl) {
+      followState.scrollEl = followState._innerScrollEl
+      // 外层刚把目标页滚回视窗：保留该页内层当前位置，只从这里跟到最新；
+      // 不要用 alignStart 把内层重新顶到上方再滚
+      followState.alignStart = opts.fromOuter ? false : followState._innerAlignStart
+      followState.padding = followState._innerPadding
+    }
+    var target = clampScrollTarget(pickRevealTarget(followState.anchor))
+    var scrollEl = getActiveScrollEl()
+    if (!scrollEl || Math.abs(target - scrollEl.scrollTop) < 1) {
+      if (scrollEl) scrollEl.scrollTop = target
+      followState._tickTarget = target
+      if (followState.stopTimer) {
+        clearTimeout(followState.stopTimer)
+        followState.stopTimer = null
+      }
+      finalSnap()
+      stop()
+      return
+    }
+    startAnim(target)
+    armPhaseTimer(followState._animDuration + 220, function () {
+      finalSnap()
+      stop()
+    })
+    bump()
+  }
+
+  function beginOuterPhase() {
+    if (!followState.active) return
+    followState.phase = 'outer'
+    followState.scrollEl = followState.stage
+    followState.alignStart = true
+    var target = clampScrollTarget(measureOuterPageTarget())
+    var scrollEl = getActiveScrollEl()
+    if (!scrollEl || Math.abs(target - scrollEl.scrollTop) < OUTER_NEED_PX) {
+      if (scrollEl) scrollEl.scrollTop = target
+      beginInnerPhase({ fromOuter: true })
+      return
+    }
+    startAnim(target)
+    armPhaseTimer(followState._animDuration + 220, function () {
+      finalSnap()
+      beginInnerPhase({ fromOuter: true })
+    })
+    bump()
+  }
+
+  function onPhaseSettled() {
+    if (!followState.active) return
+    if (followState.phase === 'outer') {
+      beginInnerPhase({ fromOuter: true })
+      return
+    }
+    if (followState.stopTimer) {
+      clearTimeout(followState.stopTimer)
+      followState.stopTimer = null
+    }
+    finalSnap()
+    stop()
+  }
+
+  function resolvePhaseTarget() {
+    if (followState.phase === 'outer') {
+      return clampScrollTarget(measureOuterPageTarget())
+    }
+    return clampScrollTarget(pickRevealTarget(followState.anchor))
+  }
+
+  function tick(now) {
     if (!followState.active) return
     var scrollEl = getActiveScrollEl()
     if (!scrollEl) {
@@ -563,38 +767,39 @@
       return
     }
 
-    // 锁定 target：只在首次 tick 或显式 bump 时重新计算，避免逐帧依赖
-    // getBoundingClientRect 引起的反馈振荡
-    if (isNaN(followState._tickTarget)) {
-      followState._tickTarget = clampScrollTarget(pickRevealTarget(followState.anchor))
-    }
-    var target = followState._tickTarget
-    var current = scrollEl.scrollTop
-    var diff = target - current
+    now = now != null ? now : performance.now()
 
-    if (Math.abs(diff) < 1) {
-      scrollEl.scrollTop = target
+    // 目标失效时从当前位置重新开一段缓出动画
+    if (isNaN(followState._tickTarget) || followState._animStart == null) {
+      startAnim(resolvePhaseTarget())
+    }
+
+    var elapsed = now - followState._animStart
+    var duration = followState._animDuration || 1
+    var t = elapsed / duration
+
+    if (t >= 1) {
+      scrollEl.scrollTop = followState._animTo
       followState.raf = null
+      followState._animStart = null
+      onPhaseSettled()
       return
     }
 
-    var absDiff = Math.abs(diff)
-    var step
-    // 叠层切题 alignStart：距离大时放慢，让用户感知「向上滚入」
-    if (followState.alignStart && absDiff > 80) {
-      step = absDiff > 520 ? 0.08 : (absDiff > 240 ? 0.1 : 0.13)
-    } else {
-      step = absDiff > 240 ? 0.35 : (absDiff > 80 ? 0.45 : 0.55)
-    }
-    scrollEl.scrollTop = current + diff * step
+    var eased = easeInOutCubic(Math.max(0, Math.min(1, t)))
+    scrollEl.scrollTop = followState._animFrom +
+      (followState._animTo - followState._animFrom) * eased
     followState.raf = requestAnimationFrame(tick)
   }
 
   function bump(recompute) {
     if (!followState.active) return
-    // 布局变化时（ResizeObserver）用 bump() 不带参数：保持缓存 target，只确保 tick 继续运行
-    // 显式需要重新计算 target 时（定时调度 bump、initial follow）传 true
-    if (recompute) followState._tickTarget = NaN
+    // 布局变化：不重算目标，只保证 tick 在跑
+    // 显式 recompute：从当前位置重新缓出到新目标
+    if (recompute) {
+      followState._tickTarget = NaN
+      followState._animStart = null
+    }
     if (!followState.raf) followState.raf = requestAnimationFrame(tick)
   }
 
@@ -648,36 +853,22 @@
     if (!configureFollow(anchor, opts)) return
     if (opts.preserveScroll) return
     followState.active = true
-
-    // 锁定 target：内容已渲染完毕，一次计算后阻尼平滑收敛到目标位置
-    // ResizeObserver 确保 tick 持续运行，1200ms 后 finalSnap 做一次最终校准
-    followState._tickTarget = clampScrollTarget(pickRevealTarget(followState.anchor))
-
-    bump()
+    lockUserInput()
     observeLayout(anchor)
 
-    followState._cancelFollow = function () {
-      if (followState.active) stop()
+    // 两层：若外层未把目标页顶进视窗，先外层到位（同首次），再内层跟到最新；
+    // 自动滚动期间锁定用户手势，结束后解锁（见 stop → detachInputLock）
+    if (needsOuterPhase()) {
+      beginOuterPhase()
+    } else {
+      beginInnerPhase()
     }
-    var scrollEl = getActiveScrollEl()
-    if (scrollEl) {
-      attachScrollListener(scrollEl, 'wheel')
-      attachScrollListener(scrollEl, 'touchmove')
-    }
-    if (followState.stage && followState.stage !== scrollEl) {
-      attachScrollListener(followState.stage, 'wheel')
-      attachScrollListener(followState.stage, 'touchmove')
-    }
-
-    followState.stopTimer = setTimeout(function () {
-      finalSnap()
-      stop()
-    }, 1200)
   }
 
   function resetScrollPast() {
     var scrollEl = getActiveScrollEl()
     if (scrollEl) {
+      expandHandwritingPast(scrollEl)
       clearScrollCapacity(scrollEl)
     }
   }
@@ -687,6 +878,8 @@
     reveal: reveal,
     stop: stop,
     finalSnap: finalSnap,
-    resetScrollPast: resetScrollPast
+    resetScrollPast: resetScrollPast,
+    isActive: function () { return !!followState.active },
+    getPhase: function () { return followState.phase }
   }
 })()

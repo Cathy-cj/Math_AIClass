@@ -175,6 +175,12 @@
       return Math.max(0, (m.gutter - RAIL_WIDTH) / 2)
     }
 
+    function pinRailToViewport(st) {
+      // host===scrollEl 时 rail 是滚动容器子节点，须用 scrollTop 抵消，否则会随内容滚出视口
+      if (host !== scrollEl || !cache.visible) return
+      rail.style.top = cache.railTop + st + 'px'
+    }
+
     function syncLayout() {
       layoutRaf = null
       var live = readScrollMetrics()
@@ -199,17 +205,21 @@
         cache.ch = live.ch
       }
 
-      if (layoutChanged || !cache.visible) {
+      var wasVisible = cache.visible
+      if (layoutChanged || !wasVisible) {
         cache.visible = true
         cache.railTop = m.top
         cache.railH = m.height
         cache.railRight = railRight
         rail.style.display = ''
-        rail.style.top = m.top + 'px'
         rail.style.right = railRight + 'px'
         rail.style.bottom = 'auto'
         rail.style.height = m.height + 'px'
       }
+
+      // host===scrollEl：用 scrollTop 钉轨；否则只在布局变化时写 top
+      if (host === scrollEl) pinRailToViewport(live.st)
+      else if (layoutChanged || !wasVisible) rail.style.top = m.top + 'px'
 
       syncThumb(true)
     }
@@ -250,6 +260,7 @@
         cache.ch = live.ch
         return
       }
+      pinRailToViewport(live.st)
       scheduleThumbSync()
       showActive()
     }
@@ -284,11 +295,13 @@
         var live = readScrollMetrics()
         var maxScroll = Math.max(0, live.sh - live.ch)
         if (maxScroll <= 0) return
+        // 用可视矩形算 travel，自动消化 .lf-stage 的 transform: scale
+        var railRect = rail.getBoundingClientRect()
+        var thumbRect = thumb.getBoundingClientRect()
         drag = {
           startY: e.clientY,
           startScroll: live.st,
-          trackH: cache.railH,
-          thumbH: cache.thumbH,
+          travel: Math.max(0, railRect.height - thumbRect.height),
           maxScroll: maxScroll
         }
         showActive()
@@ -298,10 +311,9 @@
       }
       function onThumbMove(e) {
         if (!drag) return
-        var travel = Math.max(0, drag.trackH - drag.thumbH)
-        if (travel <= 0) return
+        if (drag.travel <= 0) return
         var delta = e.clientY - drag.startY
-        var scrollDelta = (delta / travel) * drag.maxScroll
+        var scrollDelta = (delta / drag.travel) * drag.maxScroll
         scrollEl.scrollTop = Math.max(0, Math.min(drag.maxScroll, drag.startScroll + scrollDelta))
         onScroll()
       }

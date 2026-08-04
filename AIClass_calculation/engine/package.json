@@ -12,7 +12,7 @@
     "course:restore": "node tools/aiclass.mjs course:restore",
     "pipeline:board": "node tools/pipeline-board.mjs",
     "test": "node tests/run-tests.mjs",
-    "test:browser": "node tests/browser-smoke.mjs",
+    "test:browser": "node tests/browser-smoke.mjs && node tests/overlay-scrollbar-pin-smoke.mjs",
     "test:course-browser": "node tests/course-browser-smoke.mjs",
     "test:visual-theme": "node tests/visual-theme-smoke.mjs",
     "test:debug-shell": "node tests/debug-shell-smoke.mjs",

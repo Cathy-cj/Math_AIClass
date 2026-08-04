@@ -19,6 +19,15 @@
   scroll-padding-right: var(--aic-overlay-scrollbar-gutter);
 }
 
+/* Layout rules set `padding` shorthand on .course-scroll-* and wipe gutter;
+   restore with higher specificity when overlay is attached. */
+.course-container[data-layout] .course-scroll-main[data-overlay-scrollbar="1"],
+.course-container[data-layout] .course-scroll-right[data-overlay-scrollbar="1"],
+.course-container[data-layout] .course-scroll-left[data-overlay-scrollbar="1"] {
+  padding-right: var(--aic-overlay-scrollbar-gutter, 14px);
+  scroll-padding-right: var(--aic-overlay-scrollbar-gutter, 14px);
+}
+
 .aic-overlay-scrollbar {
   position: absolute;
   right: calc((var(--aic-overlay-scrollbar-gutter, 14px) - 4px) / 2);
