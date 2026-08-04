@@ -9,7 +9,7 @@ npm install
 npm run vendor:sync
 ```
 
-同步离线：KaTeX、Konva、JSXGraph。
+同步离线：KaTeX、JSXGraph。
 
 ## Workspace
 
@@ -24,7 +24,6 @@ copy workspace.example.json workspace.local.json
   },
   "runtime": {
     "katexBase": "vendor/katex/",
-    "konvaSrc": "vendor/konva/konva.min.js",
     "jsxgraphBase": "vendor/jsxgraph/"
   }
 }

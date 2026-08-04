@@ -209,12 +209,6 @@
   max-width: var(--cc-figure-svg-width, 100%);
 }
 
-.course-container[data-layout="top-split"] .course-scroll-right .hw-workspace,
-.course-container[data-layout="top-split"] .course-scroll-right .lf-block-handwriting {
-  height: 100%;
-  min-height: var(--cc-split-min-height, 320px);
-}
-
 /* split 布局：题干 + 左图固定，仅右侧整栏滚动 */
 .course-flow:has(.course-container[data-layout="left-right"]),
 .course-flow:has(.course-container[data-layout="top-split"]) {
@@ -237,7 +231,7 @@
   margin-bottom: 0;
 }
 
-/* left-right — 上题干 + 左图固定 + 右侧整栏滚动（手写/引导链/交互同滚） */
+/* left-right — 上题干 + 左图固定 + 右侧整栏滚动 */
 .course-container[data-layout="left-right"] .course-body {
   display: flex;
   flex-direction: column;
@@ -314,12 +308,6 @@
   pointer-events: none;
 }
 
-.course-container[data-layout="left-right"] .course-scroll-stack .hw-workspace,
-.course-container[data-layout="left-right"] .course-scroll-stack .lf-block-handwriting {
-  flex-shrink: 0;
-  min-height: var(--cc-split-min-height, 420px);
-}
-
 /* top-split / left-right 顶栏左右内边距（限高/展开见 stem-zoom.css） */
 .course-container[data-layout="top-split"] .course-scroll-top,
 .course-container[data-layout="left-right"] .course-scroll-top {
@@ -337,19 +325,6 @@
   flex-shrink: 0;
   width: 100%;
   pointer-events: none;
-}
-
-/* scrollPast：折叠已滚过的手写板，避免占位 420px + 垫高 spacer 干扰交错跟随 */
-.course-scroll-stack .lf-block-handwriting--past {
-  flex-shrink: 0;
-  min-height: 0 !important;
-  height: 0;
-  margin: 0;
-  padding: 0;
-  overflow: hidden;
-  opacity: 0;
-  pointer-events: none;
-  border: none;
 }
 
 /* 多题纵向叠放：stage 滚容器，容器内仍右侧滚 */

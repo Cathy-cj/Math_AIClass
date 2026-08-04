@@ -198,7 +198,6 @@ function main() {
     checkReplaceKeyInPlace()
     checkFigureTextNormalize()
     assert(fs.existsSync(path.join(root, 'vendor', 'katex', 'katex.min.js')), 'KaTeX vendor missing.')
-    assert(fs.existsSync(path.join(root, 'vendor', 'konva', 'konva.min.js')), 'Konva vendor missing.')
     assert(
       fs.existsSync(path.join(root, 'vendor', 'jsxgraph', 'jsxgraphcore.js')),
       'JSXGraph vendor missing.'

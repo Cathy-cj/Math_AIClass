@@ -20,10 +20,9 @@ function copyDirectory(source, target) {
 }
 
 const katexDist = path.join(root, 'node_modules', 'katex', 'dist')
-const konvaDist = path.join(root, 'node_modules', 'konva', 'konva.min.js')
 const jxgPkg = path.join(root, 'node_modules', 'jsxgraph')
 
-if (!fs.existsSync(katexDist) || !fs.existsSync(konvaDist)) {
+if (!fs.existsSync(katexDist)) {
   throw new Error('Dependencies are missing. Run npm install before vendor:sync.')
 }
 if (!fs.existsSync(jxgPkg)) {
@@ -33,7 +32,6 @@ if (!fs.existsSync(jxgPkg)) {
 const katexTarget = path.join(root, 'vendor', 'katex')
 fs.rmSync(katexTarget, { recursive: true, force: true })
 copyDirectory(katexDist, katexTarget)
-copyFile(konvaDist, path.join(root, 'vendor', 'konva', 'konva.min.js'))
 
 const jxgTarget = path.join(root, 'vendor', 'jsxgraph')
 fs.rmSync(jxgTarget, { recursive: true, force: true })
@@ -71,7 +69,6 @@ copyFile(jxgCss, path.join(jxgTarget, 'jsxgraph.css'))
 
 const licenses = [
   ['katex', 'LICENSE'],
-  ['konva', 'LICENSE'],
   ['jsxgraph', 'LICENSE']
 ]
 for (const [name, file] of licenses) {
@@ -81,4 +78,4 @@ for (const [name, file] of licenses) {
   }
 }
 
-console.log('Vendor assets synchronized (katex, konva, jsxgraph).')
+console.log('Vendor assets synchronized (katex, jsxgraph).')

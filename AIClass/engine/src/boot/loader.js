@@ -22,7 +22,6 @@
   })
 
   writeScript(lessonRoot + '/course.meta.js')
-  writeScript(lessonRoot + '/config.local.js')
   writeScript(lessonRoot + '/handlers.js')
   writeScript(lessonRoot + '/bootstrap.js')
   writeScript(lessonRoot + '/manifest.js')

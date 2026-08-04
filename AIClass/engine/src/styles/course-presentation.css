@@ -63,10 +63,6 @@
   color: var(--cc-text);
 }
 
-.course-container[data-layout="left-right"] .lf-block-handwriting {
-  font-size: var(--cc-body-size, var(--lf-body-size, 28px));
-}
-
 .course-container[data-layout="left-right"] .course-scroll-main {
   scrollbar-width: none;
   -ms-overflow-style: none;

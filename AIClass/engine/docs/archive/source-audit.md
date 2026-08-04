@@ -13,7 +13,6 @@
 - `src/core/course-container.js`
 - `src/core/execution-log.js`
 - `src/core/figure-host.js`
-- `src/core/handwriting-runtime.js`
 - `src/core/interaction-gate.js`
 - `src/core/interaction-snapshot.js`
 - `src/core/layout-stage.js`
@@ -33,7 +32,6 @@
 
 - `src/boot/engine-manifest.js`：删除课程专用 widget，加入 Figure kit 与 quick-QA 通用依赖。
 - `src/components/latex.js`：CDN 固定地址改为本地 `vendor/`，允许 runtime 配置覆盖。
-- `src/components/handwriting.js`：Konva 改为本地懒加载；删除固定 OCR endpoint/API key，改为可选 provider。
 - `src/components/difficulty-stars.js`：恢复使用已提取的金色、红色和灰色 SVG 星星图片，并由引擎 CSS 统一控制尺寸。
 - `src/core/execution-log.js`：消息 `source` 与 `targetOrigin` 改由 `__COURSE_BOOT` 配置。
 - `src/screens/pre-lesson/pre-lesson.js`：知识点/例题默认文案改为学习模块/主课程。

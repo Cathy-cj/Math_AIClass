@@ -262,9 +262,6 @@
     if (window.AIClassComponent && typeof window.AIClassComponent.hideFloatingMathKeyboard === 'function') {
       window.AIClassComponent.hideFloatingMathKeyboard()
     }
-    if (window.AIClassComponent && typeof window.AIClassComponent.syncHandwritingDemoTips === 'function') {
-      window.AIClassComponent.syncHandwritingDemoTips(null)
-    }
     unlockStageForInnerBodyScroll()
     syncStackMode()
   }

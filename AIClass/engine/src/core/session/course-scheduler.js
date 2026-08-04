@@ -63,14 +63,16 @@
     return null
   }
 
-  var HANDWRITING_RUNTIME_ACTIONS = [
+  var RECOGNITION_RESULT_RUNTIME_ACTIONS = [
     {
-      name: '手写板_显示',
-      description: '在当前题目右侧挂载手写板（可多开，按 logAction 隔离）；logAction 必填，标识所属题目（如该题目的入口 action）；同一 logAction 已打开则幂等复用；pretendSubmit:true 仅假装提交不上报 Agent；可选 demoVideo 覆盖完整演示视频，demoPreview 覆盖悬浮预览（图片或短视频）'
+      name: '识别结果_回显',
+      params: ['content', 'targetAction'],
+      description: '在目标练习题右侧顶部回显 Agent 返回的文字与 LaTeX；不判题、不提交、不推进步骤'
     },
     {
-      name: '手写板_关闭',
-      description: '收起手写板：传 logAction 只关该板，不传则关掉全部 runtime 板；clearDraft 可选清草稿'
+      name: '识别结果_清除',
+      params: ['targetAction'],
+      description: '清除目标练习题右侧顶部的识别结果'
     }
   ]
 
@@ -167,7 +169,6 @@
     this.instanceCounter = 0
     this.feynmanOpenId = null
     this.conceptSheetOpenId = null
-    this.handwritingOpen = {}
   }
 
   CourseScheduler.prototype._moduleState = function (moduleId) {
@@ -526,11 +527,6 @@
     scrollOpts = applyDefaultScrollOpts(containerRecord, scrollOpts, renderMeta)
     followContent(containerRecord, anchorEl, scrollOpts)
 
-    if (window.AIClassComponent && typeof window.AIClassComponent.syncHandwritingDemoTips === 'function') {
-      var fxRoot = containerRecord.container && containerRecord.container.el
-      window.AIClassComponent.syncHandwritingDemoTips(renderMeta.stepId, fxRoot || null)
-    }
-
     if (retryTarget) {
       this.currentModuleId = retryTarget.renderMeta.moduleId
     }
@@ -647,16 +643,7 @@
       var inStack = this.host && typeof this.host.isStackMode === 'function' && this.host.isStackMode()
       scrollOpts.alignStart = scrollOpts.alignStart || !scrollOpts.resetPast || inStack
     }
-    if (scrollOpts.resetPast && meta.stepId && window.AIClassComponent &&
-        typeof AIClassComponent.clearHandwritingStorage === 'function') {
-      AIClassComponent.clearHandwritingStorage(meta.stepId)
-    }
     followContent(containerRecord, anchorEl, scrollOpts)
-
-    if (window.AIClassComponent && typeof window.AIClassComponent.syncHandwritingDemoTips === 'function') {
-      var stepRoot = containerRecord.container && containerRecord.container.el
-      window.AIClassComponent.syncHandwritingDemoTips(meta.stepId, stepRoot || null)
-    }
 
     var nextStepId = this._nextStepIdAfter(meta)
     var nextAction = this._actionForStepId(nextStepId)
@@ -818,9 +805,15 @@
       })
     }
 
-    HANDWRITING_RUNTIME_ACTIONS.forEach(function (item) {
-      actions.push({ name: item.name, description: item.description || '' })
+    RECOGNITION_RESULT_RUNTIME_ACTIONS.forEach(function (item) {
+      actions.push({
+        name: item.name,
+        params: item.params.slice(),
+        description: item.description,
+        recognitionResultRuntime: true
+      })
     })
+
     ;([{ name: '快问快答_关闭', description: '收起当前快问快答气泡' }]).forEach(function (item) {
       actions.push({ name: item.name, description: item.description || '' })
     })
@@ -998,11 +991,12 @@
       })
     }
 
-    HANDWRITING_RUNTIME_ACTIONS.forEach(function (item) {
+    RECOGNITION_RESULT_RUNTIME_ACTIONS.forEach(function (item) {
       actions.push({
         name: item.name,
-        description: item.description || '',
-        handwritingRuntime: true
+        description: item.description,
+        params: item.params.slice(),
+        recognitionResultRuntime: true
       })
     })
 
@@ -1041,13 +1035,6 @@
         AIClassScrollFollow.resetScrollPast()
       }
     }
-    if (window.AIClassComponent && typeof AIClassComponent.clearAllHandwritingStorage === 'function') {
-      AIClassComponent.clearAllHandwritingStorage()
-    }
-    if (window.AIClassHandwritingRuntime && typeof AIClassHandwritingRuntime.teardownAll === 'function') {
-      AIClassHandwritingRuntime.teardownAll()
-    }
-    this.handwritingOpen = {}
     var stage = document.querySelector('.lf-stage')
     if (stage) stage.scrollTop = 0
     return stage
@@ -1230,138 +1217,6 @@
     return { ok: true, conceptId: id }
   }
 
-  CourseScheduler.prototype._resolveHandwritingContainer = function (params) {
-    params = params || {}
-    if (!this.currentModuleId || !this.host) return null
-    var moduleId = this.currentModuleId
-    if (params.containerIdx != null) {
-      return this.host.get(moduleId, params.containerIdx)
-    }
-    if (this.pointer) {
-      return this.host.get(moduleId, this.pointer.containerIdx)
-    }
-    for (var idx = 9; idx >= 0; idx--) {
-      var rec = this.host.get(moduleId, idx)
-      if (rec) return rec
-    }
-    return this.host.get(moduleId, 0)
-  }
-
-  CourseScheduler.prototype.showHandwriting = function (params) {
-    params = params || {}
-    if (this.session !== 'boot') {
-      return this._fail('NOT_IN_LINEAR_SESSION', '手写板仅能在讲课过程中显示', {
-        receivedAction: '手写板_显示',
-        session: this.session
-      }, '请先发送当前模块的入口 action')
-    }
-    if (this.feynmanOpenId) {
-      return this._fail('FEYNMAN_OPEN', '费曼屏开启中，请先结束当前费曼屏', {
-        receivedAction: '手写板_显示',
-        feynmanId: this.feynmanOpenId
-      }, '请先发送 action「费曼' + this.feynmanOpenId + '_结束」')
-    }
-    if (!params.logAction) {
-      // 自动推导：使用当前模块的首步 action 作为 logAction
-      var mod = this._getModule(this.currentModuleId)
-      if (mod && mod.containers.length && mod.containers[0].steps.length) {
-        params.logAction = mod.containers[0].steps[0].action
-      } else {
-        return this._fail('INVALID_PARAMS', '手写板_显示 需要 params.logAction', {
-          receivedAction: '手写板_显示'
-        }, '请传入 logAction，标识所属题目的入口 action')
-      }
-    }
-    if (!this.currentModuleId) {
-      return this._fail('CONTAINER_NOT_READY', '当前无活动模块', {
-        receivedAction: '手写板_显示'
-      })
-    }
-    if (!window.AIClassHandwritingRuntime) {
-      return this._fail('HANDWRITING_NOT_LOADED', '手写板 runtime 未加载', {
-        receivedAction: '手写板_显示'
-      })
-    }
-
-    var record = this._resolveHandwritingContainer(params)
-    if (!record) {
-      return this._fail('CONTAINER_NOT_READY', '手写板目标容器尚未创建', {
-        receivedAction: '手写板_显示',
-        moduleId: this.currentModuleId,
-        containerIdx: params.containerIdx
-      })
-    }
-
-    var result = AIClassHandwritingRuntime.mount(record, params)
-    if (!result.ok) {
-      return this._fail(result.code || 'HANDWRITING_MOUNT_FAILED', result.message || '手写板挂载失败', {
-        receivedAction: '手写板_显示',
-        logAction: params.logAction
-      })
-    }
-
-    if (!this.handwritingOpen) this.handwritingOpen = {}
-    this.handwritingOpen[params.logAction] = {
-      logAction: params.logAction,
-      containerKey: record.key,
-      stepId: result.stepId
-    }
-    this.log.post({
-      type: 'handwriting_shown',
-      status: 'ok',
-      logAction: params.logAction,
-      moduleId: this.currentModuleId,
-      stepId: result.stepId,
-      reused: !!result.reused
-    })
-    return {
-      ok: true,
-      logAction: params.logAction,
-      stepId: result.stepId,
-      reused: !!result.reused
-    }
-  }
-
-  CourseScheduler.prototype.dismissHandwriting = function (params) {
-    params = params || {}
-    if (!window.AIClassHandwritingRuntime || !AIClassHandwritingRuntime.isOpen()) {
-      return this._fail('HANDWRITING_NOT_OPEN', '手写板未开启', {
-        receivedAction: '手写板_关闭'
-      })
-    }
-    if (params.logAction && this.handwritingOpen && !this.handwritingOpen[params.logAction] &&
-        typeof AIClassHandwritingRuntime.listOpen === 'function') {
-      var openList = AIClassHandwritingRuntime.listOpen() || []
-      var known = openList.some(function (item) { return item.logAction === params.logAction })
-      if (!known) {
-        return this._fail('HANDWRITING_NOT_OPEN', '指定 logAction 的手写板未开启', {
-          receivedAction: '手写板_关闭',
-          logAction: params.logAction
-        })
-      }
-    }
-    var result = AIClassHandwritingRuntime.dismiss(!!params.clearDraft, params.logAction || null)
-    var closed = (result && result.closed) || []
-    if (!this.handwritingOpen) this.handwritingOpen = {}
-    if (params.logAction) {
-      delete this.handwritingOpen[params.logAction]
-    } else {
-      this.handwritingOpen = {}
-    }
-    this.log.post({
-      type: 'handwriting_dismissed',
-      status: 'ok',
-      logAction: params.logAction || null,
-      closed: closed.map(function (item) { return item.logAction }),
-      stepId: result && result.stepId ? result.stepId : null
-    })
-    return {
-      ok: true,
-      logAction: params.logAction || null,
-      closed: closed.map(function (item) { return item.logAction })
-    }
-  }
-
   CourseScheduler.prototype.openQuickQA = function (meta) {
     if (!window.AIClassQuickQA) {
       return this._fail('QA_NOT_LOADED', '快问快答组件未加载', {})
@@ -1448,6 +1303,101 @@
     return { ok: true, qaId: qaId }
   }
 
+  CourseScheduler.prototype._resolveRecognitionResultContainer = function (targetAction) {
+    var meta = null
+    var record = null
+
+    if (targetAction != null && targetAction !== '') {
+      meta = this.router.resolveAction(targetAction)
+      if (!meta) {
+        return {
+          code: 'INVALID_TARGET_ACTION',
+          message: '未找到识别结果目标 action: ' + targetAction
+        }
+      }
+      record = this.host.get(meta.moduleId, meta.containerIdx)
+      if (!record) {
+        return {
+          code: 'CONTAINER_NOT_READY',
+          message: '目标练习题容器尚未创建',
+          meta: meta
+        }
+      }
+      return { record: record, meta: meta }
+    }
+
+    if (this.pointer) {
+      record = this.host.get(this.pointer.moduleId, this.pointer.containerIdx)
+      meta = this.router.resolveStepId(this.pointer.stepId)
+    }
+    if (!record && this.currentModuleId) {
+      for (var idx = 9; idx >= 0; idx--) {
+        record = this.host.get(this.currentModuleId, idx)
+        if (record) break
+      }
+    }
+    if (!record) {
+      return {
+        code: 'CONTAINER_NOT_READY',
+        message: '当前没有可回显识别结果的课件容器'
+      }
+    }
+    return { record: record, meta: meta }
+  }
+
+  CourseScheduler.prototype.showRecognitionResult = function (params) {
+    params = params || {}
+    if (params.content == null || String(params.content).trim() === '') {
+      return this._fail('INVALID_PARAMS', '识别结果_回显 需要非空 params.content', {
+        receivedAction: '识别结果_回显'
+      })
+    }
+    var target = this._resolveRecognitionResultContainer(params.targetAction)
+    if (!target.record) {
+      return this._fail(target.code, target.message, {
+        receivedAction: '识别结果_回显',
+        targetAction: params.targetAction || null,
+        moduleId: target.meta && target.meta.moduleId,
+        containerIdx: target.meta && target.meta.containerIdx
+      }, '请先发送目标练习题的入口 action')
+    }
+    var card = target.record.container.showRecognitionResult(String(params.content))
+    if (!card) {
+      return this._fail('RECOGNITION_RESULT_MOUNT_FAILED', '识别结果无法挂载到目标容器', {
+        receivedAction: '识别结果_回显',
+        targetAction: params.targetAction || null
+      })
+    }
+    this.log.post({
+      type: 'recognition_result_shown',
+      status: 'ok',
+      targetAction: params.targetAction || null,
+      moduleId: target.record.container.meta.moduleId,
+      containerIdx: target.record.container.meta.containerIdx
+    })
+    return { ok: true, targetAction: params.targetAction || null }
+  }
+
+  CourseScheduler.prototype.clearRecognitionResult = function (params) {
+    params = params || {}
+    var target = this._resolveRecognitionResultContainer(params.targetAction)
+    if (!target.record) {
+      return this._fail(target.code, target.message, {
+        receivedAction: '识别结果_清除',
+        targetAction: params.targetAction || null
+      }, '请先发送目标练习题的入口 action')
+    }
+    target.record.container.clearRecognitionResult()
+    this.log.post({
+      type: 'recognition_result_cleared',
+      status: 'ok',
+      targetAction: params.targetAction || null,
+      moduleId: target.record.container.meta.moduleId,
+      containerIdx: target.record.container.meta.containerIdx
+    })
+    return { ok: true, targetAction: params.targetAction || null }
+  }
+
   CourseScheduler.prototype.dispatch = function (actionName, params) {
     params = params || {}
 
@@ -1472,13 +1422,8 @@
       this.log.post({ type: 'course_reset', status: 'ok' })
       return { ok: true }
     }
-
-    if (actionName === '手写板_显示') {
-      return this.showHandwriting(params)
-    }
-    if (actionName === '手写板_关闭') {
-      return this.dismissHandwriting(params)
-    }
+    if (actionName === '识别结果_回显') return this.showRecognitionResult(params)
+    if (actionName === '识别结果_清除') return this.clearRecognitionResult(params)
 
     var feyResolved = this._resolveFeynmanAction(actionName)
     if (feyResolved) {

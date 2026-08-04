@@ -14,16 +14,16 @@ AIClass/                          monorepo 根
    │  │  ├─ layout/               舞台、背景、overlay、scroll-lock
    │  │  ├─ scroll/               滚动索引与跟随
    │  │  ├─ shell/                课容器、container/figure Host
-   │  │  └─ session/              调度、路由、门禁、手写运行时
+   │  │  └─ session/              调度、路由、门禁、提交文本
    │  ├─ components/ widgets/ screens/ styles/
    │  ├─ figures/                 Registry + JSXGraph kit + legacy SVG kit
-   │  └─ assets/                  仅通用资源（stars、handwriting-demo 等）
+   │  └─ assets/                  仅通用资源（如 stars）
    ├─ templates/                  无业务骨架
    ├─ schemas/
    ├─ tools/                      aiclass.mjs 等（coursesRoot = ../courses）
    ├─ references/                 Plan 配方；不进导出
    ├─ tests/fixtures/             合成课（测时拷到 ../courses）
-   ├─ vendor/                     katex / konva / jsxgraph
+   ├─ vendor/                     katex / jsxgraph
    ├─ docs/                       本目录
    ├─ dist/ artifacts/            生成物，不提交
    └─ workspace.example.json
@@ -51,7 +51,7 @@ math_syllabus/lesson/{id}/plan.json
 | `layout/` | 舞台、背景板、场景背景、overlay、stage scroll-lock |
 | `scroll/` | 滚动索引与跟随 |
 | `shell/` | 课容器、`container-host`、`figure-host` |
-| `session/` | 调度器、action 路由、交互门禁/快照、执行日志、交卷文案、手写运行时 |
+| `session/` | 调度器、action 路由、交互门禁/快照、执行日志、交卷文案 |
 
 加载顺序见 `src/boot/engine-manifest.js`（路径变、相对顺序不变）。
 
@@ -74,7 +74,28 @@ math_syllabus/lesson/{id}/plan.json
 
 ## Vendor
 
-`npm run vendor:sync` → `vendor/katex`、`vendor/konva`、`vendor/jsxgraph`。导出时整包拷入 dist。
+`npm run vendor:sync` → `vendor/katex`、`vendor/jsxgraph`。导出时整包拷入 dist。
+
+## Agent 识别结果回显
+
+手写板和 OCR 由宿主侧负责。Agent 拿到结果后，向课件 iframe 发送既有
+`{ action, params }` 消息：
+
+```js
+iframe.contentWindow.postMessage({
+  action: '识别结果_回显',
+  params: {
+    content: '识别到：$x=3$，验算：$$2x+1=7$$',
+    targetAction: '练习题的入口 action'
+  }
+}, '*')
+```
+
+`content` 可混排普通文字、`$...$` 行内公式与 `$$...$$` 独立公式。运行时先按
+纯文本插入，再由本地 KaTeX 渲染，不执行 HTML。`targetAction` 定位已经创建的
+练习题容器；结果固定显示在其右侧滚动区顶部。同题的新结果替换旧结果，且不会触发
+判题、提交或教学步骤推进。课件会回传 `recognition_result_shown`；需要移除结果时发送
+`识别结果_清除` 并携带同一 `targetAction`。
 
 ## 相关文档
 

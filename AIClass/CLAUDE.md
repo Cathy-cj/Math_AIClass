@@ -51,7 +51,7 @@ Monorepo with three packages plus SOPs; content flows left to right:
 math_syllabus/lesson/{id}/          courses/{courseId}/                 engine/
 outline.json                 →      course.json (registry)       ←──   runtime shell, widgets,
 plan.json                           lesson/modules/XX-{id}.js           templates, CLI tools,
-(per-problem source of truth)       lesson/modules/_*-figure.js         vendored KaTeX/Konva/JSXGraph
+(per-problem source of truth)       lesson/modules/_*-figure.js         vendored KaTeX/JSXGraph
 ```
 
 - **`math_syllabus/`** holds per-problem teaching content. `outline.json` is the lesson-prep design (positioning, entry point, `teachingStages[]` with derivation loops/interactions, closing); `plan.json` expands approved stages into steps (`action`, `agent.description` narration, `figure.state/note/actions`, right-column `push` blocks). Humans review the JSON files directly (plus in-conversation summaries); `check-phrase-variety.mjs` is the lint behind `plan:check`, and the `scripts/*.mjs` md exporters are optional human tools only.

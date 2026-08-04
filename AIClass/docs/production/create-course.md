@@ -60,7 +60,6 @@ copy workspace.example.json workspace.local.json
   },
   "runtime": {
     "katexBase": "vendor/katex/",
-    "konvaSrc": "vendor/konva/konva.min.js",
     "jsxgraphBase": "vendor/jsxgraph/"
   }
 }

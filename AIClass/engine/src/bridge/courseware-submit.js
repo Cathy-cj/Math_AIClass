@@ -36,7 +36,6 @@
       return selected == null ? '' : String(selected)
     }
     if (kind === 'fill') return fmt.formatFill(rawValue)
-    if (kind === 'handwriting') return fmt.formatHandwriting(rawValue)
     if (kind === 'matching') {
       var pair = (rawValue && rawValue.pair) || rawValue || []
       return Array.isArray(pair)
@@ -79,18 +78,6 @@
     buildUserSubmitted: buildUserSubmitted,
     submitInteraction: submit,
     fromFillValue: fromFillValue,
-    fromHandwritingValue: function (value) {
-      return window.AIClassSubmitText
-        ? AIClassSubmitText.formatHandwriting(value)
-        : String(value == null ? '' : value)
-    },
-    submitHandwriting: function (payload, rawValue, block) {
-      if (typeof payload === 'string' || payload == null) {
-        rawValue = payload
-        payload = {}
-      }
-      submit('handwriting', payload, rawValue, block)
-    },
     submitSingleChoice: function (payload, rawValue, block) {
       submit('choice', payload, rawValue, block)
     },

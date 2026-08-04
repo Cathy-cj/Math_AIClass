@@ -24,10 +24,6 @@
       } else if (api.submitSingleChoice) {
         api.submitSingleChoice(payload, value, block)
       }
-    },
-    reportHandwriting: function (value, block) {
-      var api = submitApi()
-      if (api && api.submitHandwriting) api.submitHandwriting({}, value, block)
     }
   }
 })()

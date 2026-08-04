@@ -66,208 +66,6 @@
     return String(value == null ? '' : value).trim()
   }
 
-  var HANDWRITING_OCR_INVALID = '学生书写内容无法正确识别'
-  var LAYOUT_BBOX_IMAGE = /^!\[\]\(page=\d+,bbox=\[[^\]]+\]\)$/i
-
-  function isLayoutBboxPlaceholder(text) {
-    text = String(text == null ? '' : text).trim()
-    if (!text) return false
-    if (LAYOUT_BBOX_IMAGE.test(text)) return true
-    var parts = text.split(/\s+/).filter(Boolean)
-    return parts.length > 0 && parts.every(function (part) { return LAYOUT_BBOX_IMAGE.test(part) })
-  }
-
-  function fixHandwritingMathAmbiguities(text) {
-    var s = String(text == null ? '' : text)
-    if (!s) return s
-    // 手写 π 常被 OCR 识成「元」「兀」；仅在算式语境替换，避免误伤纯中文
-    s = s.replace(/(\d+(?:\.\d+)?)\s*元/g, '$1π')
-    s = s.replace(/([×÷+\-＝=])\s*元/g, '$1π')
-    s = s.replace(/元\s*([×÷+\-＝=])/g, 'π$1')
-    s = s.replace(/(\d+(?:\.\d+)?)\s*兀/g, '$1π')
-    s = s.replace(/([×÷+\-＝=])\s*兀/g, '$1π')
-    s = s.replace(/兀\s*([×÷+\-＝=])/g, 'π$1')
-    return s
-  }
-
-  function normalizeHandwritingOcr(md) {
-    return fixHandwritingMathAmbiguities(
-      String(md == null ? '' : md)
-      .replace(/\$\$[\s\S]*?\$\$/g, function (block) {
-        return block
-          .replace(/\\mathrm\s*\{([^}]*)\}/gi, '$1')
-          .replace(/\\[a-zA-Z]+\s*\{([^}]*)\}/g, '$1')
-          .replace(/\\[a-zA-Z]+/g, ' ')
-          .replace(/\$/g, ' ')
-      })
-      .replace(/\\mathrm\s*\{([^}]*)\}/gi, '$1')
-      .replace(/\\[a-zA-Z]+\s*\{([^}]*)\}/g, '$1')
-      .replace(/\\[a-zA-Z]+/g, ' ')
-      .replace(/<[^>]+>/g, ' ')
-      .replace(/!\[\]\(page=\d+,bbox=\[[^\]]*\]\)/gi, ' ')
-      .replace(/!\[\]\([^)]*\)/g, ' ')
-      .replace(/^\s*#{1,6}\s*/gm, '')
-      .replace(/[^\S\n]+/g, ' ')
-      .replace(/\n{3,}/g, '\n\n')
-      .trim()
-    )
-  }
-
-  function isNoisyLayoutOcr(text) {
-    var raw = String(text || '')
-    if (!raw) return false
-    if (/\$\$|\\\w+\{|<\w+[\s>]/.test(raw)) return true
-    if (/\\mathrm|\\frac|\\begin|\\text/.test(raw)) return true
-    return false
-  }
-
-  function countCjk(text) {
-    return (String(text || '').match(/[\u4e00-\u9fff]/g) || []).length
-  }
-
-  function countLatin(text) {
-    return (String(text || '').match(/[a-zA-Z]/g) || []).length
-  }
-
-  function needsScriptGap(prev, next) {
-    if (!prev || !next) return false
-    var prevCjk = /[\u4e00-\u9fff]$/.test(prev)
-    var nextCjk = /^[\u4e00-\u9fff]/.test(next)
-    var prevLat = /[a-zA-Z0-9]$/.test(prev)
-    var nextLat = /^[a-zA-Z0-9]/.test(next)
-    return (prevCjk && nextLat) || (prevLat && nextCjk)
-  }
-
-  function joinMixedScriptParts(parts) {
-    return parts.reduce(function (acc, word) {
-      if (!acc) return word
-      return acc + (needsScriptGap(acc, word) ? ' ' : '') + word
-    }, '')
-  }
-
-  function pickMergedOcrText(hw, layout) {
-    var hwNorm = hw ? normalizeHandwritingOcr(hw) : ''
-    var layoutNorm = layout ? normalizeHandwritingOcr(layout) : ''
-    if (!hwNorm && !layoutNorm) return ''
-    if (!hwNorm) return layoutNorm
-    if (!layoutNorm) return hwNorm
-
-    var hwLatin = countLatin(hwNorm)
-    var layoutLatin = countLatin(layoutNorm)
-
-    if (layoutLatin > 0 && hwLatin === 0 && countCjk(hwNorm) > 0) return layoutNorm
-    if (hwLatin > 0 && layoutLatin === 0 && countCjk(layoutNorm) > 0) return hwNorm
-    if (layoutLatin > hwLatin && countCjk(layoutNorm) >= countCjk(hwNorm) - 1) return layoutNorm
-    if (hwLatin > layoutLatin && countCjk(hwNorm) >= countCjk(layoutNorm) - 1) return hwNorm
-
-    if (hwNorm && (!layoutNorm || isNoisyLayoutOcr(layout))) return hwNorm
-    if (isNoisyLayoutOcr(layout) && !isNoisyLayoutOcr(hw)) return hwNorm
-    if (countCjk(hwNorm) > countCjk(layoutNorm)) return hwNorm
-    if (countCjk(layoutNorm) > countCjk(hwNorm) && !isNoisyLayoutOcr(layout)) return layoutNorm
-    return hwNorm.length >= layoutNorm.length ? hwNorm : layoutNorm
-  }
-
-  function stripLayoutOcrNoise(text) {
-    return normalizeHandwritingOcr(text).replace(/\s+/g, '')
-  }
-
-  function isHandwritingOcrValid(md) {
-    var raw = String(md == null ? '' : md).trim()
-    if (!raw.length) return false
-    if (isLayoutBboxPlaceholder(raw)) return false
-    return normalizeHandwritingOcr(raw).length > 0
-  }
-
-  function extractLayoutDetailTexts(data) {
-    var details = data && data.layout_details
-    if (!Array.isArray(details)) return []
-    var texts = []
-    details.forEach(function (page) {
-      var items = Array.isArray(page) ? page : [page]
-      items.forEach(function (item) {
-        if (!item) return
-        var label = item.label
-        if (label && label !== 'text' && label !== 'formula') return
-        var content = String(item.content || '').trim()
-        if (!content || isLayoutBboxPlaceholder(content)) return
-        if (/^https?:\/\//i.test(content)) return
-        texts.push(content)
-      })
-    })
-    return texts
-  }
-
-  function joinHandwriteWords(words) {
-    if (!Array.isArray(words) || !words.length) return ''
-    function topOf(item) {
-      var loc = item && item.location
-      return loc && loc.top != null ? loc.top : 0
-    }
-    function leftOf(item) {
-      var loc = item && item.location
-      return loc && loc.left != null ? loc.left : 0
-    }
-    function heightOf(item) {
-      var loc = item && item.location
-      return loc && loc.height != null ? loc.height : 32
-    }
-    var sorted = words.slice().sort(function (a, b) {
-      var dy = topOf(a) - topOf(b)
-      var lineGap = Math.max(heightOf(a), heightOf(b)) * 0.55
-      if (Math.abs(dy) > lineGap) return dy
-      return leftOf(a) - leftOf(b)
-    })
-    var lines = []
-    sorted.forEach(function (item) {
-      var word = String(item && item.words != null ? item.words : '').trim()
-      if (!word) return
-      var top = topOf(item)
-      var last = lines[lines.length - 1]
-      var gap = last ? Math.max(last.lineHeight, heightOf(item)) * 0.55 : 0
-      if (last && Math.abs(top - last.top) <= gap) {
-        last.parts.push(word)
-        last.top = (last.top + top) / 2
-        last.lineHeight = Math.max(last.lineHeight, heightOf(item))
-      } else {
-        lines.push({ top: top, lineHeight: heightOf(item), parts: [word] })
-      }
-    })
-    return lines.map(function (line) { return joinMixedScriptParts(line.parts) }).join('\n')
-  }
-
-  function pickHandwriteOcrFromResponse(data) {
-    if (!data || data.status !== 'succeeded') return ''
-    var words = data.words_result
-    if (!Array.isArray(words) || !words.length) return ''
-    var joined = joinHandwriteWords(words)
-    if (!isHandwritingOcrValid(joined)) return ''
-    return normalizeHandwritingOcr(joined)
-  }
-
-  function pickHandwritingOcrFromResponse(data) {
-    if (!data) return ''
-    // GLM-OCR layout_parsing：优先 md_results / layout_details
-    var md = data.md_results
-    if (isHandwritingOcrValid(md)) return normalizeHandwritingOcr(md)
-    var layoutJoined = extractLayoutDetailTexts(data).join('\n')
-    if (isHandwritingOcrValid(layoutJoined)) return normalizeHandwritingOcr(layoutJoined)
-    return pickHandwriteOcrFromResponse(data)
-  }
-
-  function combineOcrRowResults(rowResults, expectAllRows) {
-    if (expectAllRows && rowResults.length > 0) {
-      if (rowResults.some(function (row) { return !row.ok })) return ''
-    }
-    return rowResults.map(function (row) { return row.text }).filter(Boolean).join('\n').trim()
-  }
-
-  function formatHandwriting(md) {
-    if (!isHandwritingOcrValid(md)) return HANDWRITING_OCR_INVALID
-    return normalizeHandwritingOcr(md)
-  }
-
-  var HANDWRITING_OCR_FALLBACK = HANDWRITING_OCR_INVALID
-
   function ensureString(value) {
     if (value == null) return ''
     if (typeof value === 'string') return value.trim()
@@ -318,32 +116,17 @@
       return selected == null ? '' : String(selected)
     }
     if (kind === 'fill') return formatFill(value)
-    if (kind === 'handwriting') return formatHandwriting(value)
     return ensureString(value)
   }
 
   window.AIClassSubmitText = {
     SEP_ITEM: SEP_ITEM,
     SEP_PAIR: SEP_PAIR,
-    HANDWRITING_OCR_INVALID: HANDWRITING_OCR_INVALID,
-    HANDWRITING_OCR_FALLBACK: HANDWRITING_OCR_FALLBACK,
-    isHandwritingOcrValid: isHandwritingOcrValid,
-    pickHandwritingOcrFromResponse: pickHandwritingOcrFromResponse,
-    combineOcrRowResults: combineOcrRowResults,
-    joinHandwriteWords: joinHandwriteWords,
-    pickHandwriteOcrFromResponse: pickHandwriteOcrFromResponse,
-    pickMergedOcrText: pickMergedOcrText,
-    isNoisyLayoutOcr: isNoisyLayoutOcr,
-    extractLayoutDetailTexts: extractLayoutDetailTexts,
-    normalizeHandwritingOcr: normalizeHandwritingOcr,
-    fixHandwritingMathAmbiguities: fixHandwritingMathAmbiguities,
-    stripLayoutOcrNoise: stripLayoutOcrNoise,
     normalizeOptions: normalizeOptions,
     findItem: findItem,
     formatChoice: formatChoice,
     parseChoice: parseChoice,
     formatFill: formatFill,
-    formatHandwriting: formatHandwriting,
     ensureString: ensureString,
     report: report
   }

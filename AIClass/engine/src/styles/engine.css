@@ -24,9 +24,9 @@
 @import "./choice.css";
 @import "./chain.css";
 @import "./read-list.css";
-@import "./handwriting.css";
 @import "./hand-hint.css";
 @import "./oral-input.css";
 @import "./oral-card.css";
 @import "./choice-card.css";
 @import "./quick-qa.css";
+@import "./recognition-result.css";

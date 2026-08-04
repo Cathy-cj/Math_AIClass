@@ -582,7 +582,6 @@ function renderIndex(course, catalog) {
   )
   const runtime = loadWorkspace().runtime || {
     katexBase: 'vendor/katex/',
-    konvaSrc: 'vendor/konva/konva.min.js',
     jsxgraphBase: 'vendor/jsxgraph/'
   }
   return template

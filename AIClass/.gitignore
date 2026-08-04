@@ -13,7 +13,7 @@ courses/*
 
 # 临时调试脚本 / 可视化截图（冒烟自检产物，不入库）
 engine/tmp_*
-engine/.tmp-shots/
+engine/.tmp-*/
 
 # Dependencies
 node_modules/

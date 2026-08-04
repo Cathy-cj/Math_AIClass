@@ -253,26 +253,17 @@
   CourseContainer.prototype.placeGuidanceInStack = function () {
     if (!this.scrollStackEl) return
     var stack = this.scrollStackEl
-    var hw = stack.querySelector('.lf-block-handwriting')
 
     if (this.guidanceLayout === 'interleaved') {
       var panel = this.guidePanelEl
       if (!panel) return
-      if (hw && hw.nextElementSibling !== panel && panel.parentNode === stack) {
-        stack.insertBefore(panel, hw.nextElementSibling)
-      } else {
-        ensureStackNodeBeforeSpacer(stack, panel)
-      }
+      ensureStackNodeBeforeSpacer(stack, panel)
       return
     }
 
     if (!this.guidanceChainEl) return
     var guide = this.guidanceChainEl
 
-    if (hw && guide.parentNode === stack && hw.nextElementSibling !== guide) {
-      stack.insertBefore(guide, hw.nextElementSibling)
-      return
-    }
     ensureStackNodeBeforeSpacer(stack, guide)
   }
 
@@ -373,6 +364,31 @@
     return out
   }
 
+  CourseContainer.prototype._recognitionResultTarget = function () {
+    if (this.layout === 'left-right') return this.scrollStackEl || this.scrollRightEl
+    if (this.layout === 'top-split') return this.scrollRightEl || this.scrollEl
+    return this.scrollEl
+  }
+
+  CourseContainer.prototype.showRecognitionResult = function (content) {
+    var target = this._recognitionResultTarget()
+    if (!target || !window.AIClassRecognitionResult) return null
+
+    this.clearRecognitionResult()
+    var card = AIClassRecognitionResult.create(content)
+    target.insertBefore(card, target.firstChild)
+    if (target.scrollTop != null) target.scrollTop = 0
+    return card
+  }
+
+  CourseContainer.prototype.clearRecognitionResult = function () {
+    var target = this._recognitionResultTarget()
+    if (!target || !target.querySelectorAll) return
+    target.querySelectorAll('.cc-recognition-result').forEach(function (node) {
+      if (node.parentNode) node.parentNode.removeChild(node)
+    })
+  }
+
   CourseContainer.prototype.setFigureState = function (state, opts) {
     opts = opts || {}
     if (this.figureHost && typeof this.figureHost.setState === 'function') {
@@ -430,9 +446,6 @@
     this._syncChoiceBlocks(activeStepId)
     if (window.AIClassComponent && typeof window.AIClassComponent.syncFillKeyboardVisibility === 'function') {
       window.AIClassComponent.syncFillKeyboardVisibility()
-    }
-    if (window.AIClassComponent && typeof window.AIClassComponent.syncHandwritingDemoTips === 'function') {
-      window.AIClassComponent.syncHandwritingDemoTips(activeStepId, this.el)
     }
   }
 

@@ -45,7 +45,7 @@
     'components/math-keyboard.js',
     'components/fill-keyboard.js',
     'components/latex.js',
-    'components/handwriting.js',
+    'components/recognition-result.js',
     'components/hand-hint.js',
     'components/oral-input.js',
     'components/oral-card.js',
@@ -70,12 +70,10 @@
     'widgets/choice.js',
     'widgets/chain.js',
     'widgets/read-list.js',
-    'widgets/handwriting.js',
     'widgets/feynman-quad.js',
 
     // core/session — 必须在 toolkit 之后加载
     'core/shell/container-host.js',
-    'core/session/handwriting-runtime.js',
     'core/session/course-scheduler.js'
   ]
 })()
