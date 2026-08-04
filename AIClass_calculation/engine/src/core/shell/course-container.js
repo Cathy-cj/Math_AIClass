@@ -389,6 +389,33 @@
     return out
   }
 
+  CourseContainer.prototype._recognitionResultTarget = function () {
+    if (this.layout === 'left-right' || this.layout === 'text-only') {
+      return this.scrollStackEl || this.scrollRightEl
+    }
+    if (this.layout === 'top-split') return this.scrollRightEl || this.scrollEl
+    return this.scrollEl
+  }
+
+  CourseContainer.prototype.showRecognitionResult = function (content) {
+    var target = this._recognitionResultTarget()
+    if (!target || !window.AIClassRecognitionResult) return null
+
+    this.clearRecognitionResult()
+    var card = AIClassRecognitionResult.create(content)
+    target.insertBefore(card, target.firstChild)
+    if (target.scrollTop != null) target.scrollTop = 0
+    return card
+  }
+
+  CourseContainer.prototype.clearRecognitionResult = function () {
+    var target = this._recognitionResultTarget()
+    if (!target || !target.querySelectorAll) return
+    target.querySelectorAll('.cc-recognition-result').forEach(function (node) {
+      if (node.parentNode) node.parentNode.removeChild(node)
+    })
+  }
+
   CourseContainer.prototype.setFigureState = function (state, opts) {
     opts = opts || {}
     if (this.figureHost && typeof this.figureHost.setState === 'function') {
@@ -861,14 +888,13 @@
     container.scrollEl = scroll
     container.figureSlot = figureSlot
 
-    if ((options.head || options.source || options.difficulty) && container.scrollEl) {
+    if ((options.head || options.difficulty) && container.scrollEl) {
       container.scrollEl.classList.add('course-scroll-top--labeled')
       var stemHead = null
       if (window.AIClassComponent &&
           typeof window.AIClassComponent.createCourseStemHead === 'function') {
         stemHead = window.AIClassComponent.createCourseStemHead({
           head: options.head || null,
-          source: options.source || null,
           difficulty: options.difficulty,
           difficultyMax: options.difficultyMax
         })
@@ -883,12 +909,6 @@
           labelNode.className = 'course-label'
           labelNode.textContent = options.head
           group.appendChild(labelNode)
-        }
-        if (options.source) {
-          var sourceNode = document.createElement('span')
-          sourceNode.className = 'course-source'
-          sourceNode.textContent = options.source
-          group.appendChild(sourceNode)
         }
         stemHead.appendChild(group)
       }

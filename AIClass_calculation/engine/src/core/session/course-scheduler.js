@@ -63,6 +63,19 @@
     return null
   }
 
+  var RECOGNITION_RESULT_RUNTIME_ACTIONS = [
+    {
+      name: '识别结果_回显',
+      params: ['content', 'targetAction'],
+      description: '在目标练习题右侧顶部回显 Agent 返回的文字与 LaTeX；不判题、不提交、不推进步骤'
+    },
+    {
+      name: '识别结果_清除',
+      params: ['targetAction'],
+      description: '清除目标练习题右侧顶部的识别结果'
+    }
+  ]
+
   function isInterleavedContainer(containerRecord) {
     var container = containerRecord && containerRecord.container
     return !!(container && container.guidanceLayout === 'interleaved')
@@ -354,7 +367,6 @@
       description: containerDef.description || containerDef.title,
       guidanceChain: containerDef.guidanceChain || null,
       head: containerDef.label || containerDef.head || null,
-      source: containerDef.source || null,
       difficulty: containerDef.difficulty != null ? containerDef.difficulty : null,
       difficultyMax: containerDef.difficultyMax != null ? containerDef.difficultyMax : null
     })
@@ -801,6 +813,15 @@
       })
     }
 
+    RECOGNITION_RESULT_RUNTIME_ACTIONS.forEach(function (item) {
+      actions.push({
+        name: item.name,
+        params: item.params.slice(),
+        description: item.description,
+        recognitionResultRuntime: true
+      })
+    })
+
     ;([{ name: '快问快答_关闭', description: '收起当前快问快答气泡' }]).forEach(function (item) {
       actions.push({ name: item.name, description: item.description || '' })
     })
@@ -890,7 +911,7 @@
         ? containers.map(function (c, cIdx) {
             return {
               title: c.head || c.label || c.title || mod.title,
-              description: c.description || c.source || mod.title,
+              description: c.description || mod.title,
               containerId: c.id || null,
               containerIdx: cIdx,
               container: c
@@ -1012,6 +1033,15 @@
         conceptSheet: true
       })
     }
+
+    RECOGNITION_RESULT_RUNTIME_ACTIONS.forEach(function (item) {
+      actions.push({
+        name: item.name,
+        description: item.description,
+        params: item.params.slice(),
+        recognitionResultRuntime: true
+      })
+    })
 
     ;([{ name: '快问快答_关闭', description: '收起当前快问快答气泡' }]).forEach(function (item) {
       actions.push({
@@ -1324,6 +1354,101 @@
     return { ok: true, qaId: qaId }
   }
 
+  CourseScheduler.prototype._resolveRecognitionResultContainer = function (targetAction) {
+    var meta = null
+    var record = null
+
+    if (targetAction != null && targetAction !== '') {
+      meta = this.router.resolveAction(targetAction)
+      if (!meta) {
+        return {
+          code: 'INVALID_TARGET_ACTION',
+          message: '未找到识别结果目标 action: ' + targetAction
+        }
+      }
+      record = this.host.get(meta.moduleId, meta.containerIdx)
+      if (!record) {
+        return {
+          code: 'CONTAINER_NOT_READY',
+          message: '目标练习题容器尚未创建',
+          meta: meta
+        }
+      }
+      return { record: record, meta: meta }
+    }
+
+    if (this.pointer) {
+      record = this.host.get(this.pointer.moduleId, this.pointer.containerIdx)
+      meta = this.router.resolveStepId(this.pointer.stepId)
+    }
+    if (!record && this.currentModuleId) {
+      for (var idx = 9; idx >= 0; idx--) {
+        record = this.host.get(this.currentModuleId, idx)
+        if (record) break
+      }
+    }
+    if (!record) {
+      return {
+        code: 'CONTAINER_NOT_READY',
+        message: '当前没有可回显识别结果的课件容器'
+      }
+    }
+    return { record: record, meta: meta }
+  }
+
+  CourseScheduler.prototype.showRecognitionResult = function (params) {
+    params = params || {}
+    if (params.content == null || String(params.content).trim() === '') {
+      return this._fail('INVALID_PARAMS', '识别结果_回显 需要非空 params.content', {
+        receivedAction: '识别结果_回显'
+      })
+    }
+    var target = this._resolveRecognitionResultContainer(params.targetAction)
+    if (!target.record) {
+      return this._fail(target.code, target.message, {
+        receivedAction: '识别结果_回显',
+        targetAction: params.targetAction || null,
+        moduleId: target.meta && target.meta.moduleId,
+        containerIdx: target.meta && target.meta.containerIdx
+      }, '请先发送目标练习题的入口 action')
+    }
+    var card = target.record.container.showRecognitionResult(String(params.content))
+    if (!card) {
+      return this._fail('RECOGNITION_RESULT_MOUNT_FAILED', '识别结果无法挂载到目标容器', {
+        receivedAction: '识别结果_回显',
+        targetAction: params.targetAction || null
+      })
+    }
+    this.log.post({
+      type: 'recognition_result_shown',
+      status: 'ok',
+      targetAction: params.targetAction || null,
+      moduleId: target.record.container.meta.moduleId,
+      containerIdx: target.record.container.meta.containerIdx
+    })
+    return { ok: true, targetAction: params.targetAction || null }
+  }
+
+  CourseScheduler.prototype.clearRecognitionResult = function (params) {
+    params = params || {}
+    var target = this._resolveRecognitionResultContainer(params.targetAction)
+    if (!target.record) {
+      return this._fail(target.code, target.message, {
+        receivedAction: '识别结果_清除',
+        targetAction: params.targetAction || null
+      }, '请先发送目标练习题的入口 action')
+    }
+    target.record.container.clearRecognitionResult()
+    this.log.post({
+      type: 'recognition_result_cleared',
+      status: 'ok',
+      targetAction: params.targetAction || null,
+      moduleId: target.record.container.meta.moduleId,
+      containerIdx: target.record.container.meta.containerIdx
+    })
+    return { ok: true, targetAction: params.targetAction || null }
+  }
+
   CourseScheduler.prototype.dispatch = function (actionName, params) {
     params = params || {}
 
@@ -1348,6 +1473,8 @@
       this.log.post({ type: 'course_reset', status: 'ok' })
       return { ok: true }
     }
+    if (actionName === '识别结果_回显') return this.showRecognitionResult(params)
+    if (actionName === '识别结果_清除') return this.clearRecognitionResult(params)
 
     var feyResolved = this._resolveFeynmanAction(actionName)
     if (feyResolved) {

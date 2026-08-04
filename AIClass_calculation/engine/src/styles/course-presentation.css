@@ -1,4 +1,4 @@
-/* 题号行：题号 + 来源 + 难度胶囊（与 AIClass 主仓对齐） */
+/* 题号行：题号 + 难度胶囊（与 AIClass 主仓对齐） */
 .course-stem-head {
   display: block;
   width: 100%;
@@ -32,22 +32,6 @@
   line-height: 1;
   flex-shrink: 0;
   color: var(--aic-course-label-color, #1a4fbf);
-}
-
-.course-stem-head .course-source {
-  display: inline-flex;
-  align-items: center;
-  height: 100%;
-  margin: 0;
-  padding: 0;
-  border: none;
-  background: none;
-  font-size: 0.9em;
-  font-weight: 500;
-  letter-spacing: 0.02em;
-  line-height: 1;
-  color: #5b6b7f;
-  flex-shrink: 0;
 }
 
 /* 纯文字讲解区 — 原样上浮 module_template/lesson/styles/lesson.css */

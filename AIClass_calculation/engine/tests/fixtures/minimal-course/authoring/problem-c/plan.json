@@ -2,7 +2,6 @@
   "schemaVersion": 1,
   "id": "problem-c",
   "title": "合成作业 C",
-  "source": "（合成作业来源）",
   "moduleType": "homework",
   "difficulty": 2,
   "layout": "top-split",

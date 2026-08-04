@@ -387,7 +387,6 @@ function generatedModule(plan, problem) {
         id: containerId,
         label: courseLabel(plan.moduleType || 'example'),
         head: courseLabel(plan.moduleType || 'example'),
-        source: plan.source || '',
         difficulty: plan.difficulty || 1,
         difficultyMax: plan.difficultyMax || 8,
         layout: 'top-split',

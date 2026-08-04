@@ -82,7 +82,7 @@ try {
       difficultyStarCount: difficultyStars.length,
       difficultyStarsLoaded: difficultyStars.every((star) => star.complete && star.naturalWidth > 0),
       labelText: document.querySelector('.course-label')?.textContent || '',
-      sourceText: document.querySelector('.course-source')?.textContent || '',
+      hasCourseSource: !!document.querySelector('.course-source'),
       engineCss,
       lessonCss
     }
@@ -108,8 +108,8 @@ try {
     throw new Error(`${courseId} stylesheet chain incomplete.`)
   }
   if (result.labelText !== '例') throw new Error('Generated header label must be 例.')
-  if (result.sourceText !== '（合成测试来源）') {
-    throw new Error('Generated source text is incorrect.')
+  if (result.hasCourseSource) {
+    throw new Error('Course source must not be rendered.')
   }
   console.log(`Visual theme smoke passed: ${courseId}`)
 } finally {

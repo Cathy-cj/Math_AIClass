@@ -45,6 +45,7 @@
     'components/latex.js',
     'components/calc-tex-split.js',
     'components/calc-line-fit.js',
+    'components/recognition-result.js',
     'components/hand-hint.js',
     'components/oral-input.js',
     'components/oral-card.js',

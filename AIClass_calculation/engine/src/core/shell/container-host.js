@@ -78,7 +78,6 @@
       style: meta.style || {},
       figure: resolveFigure(meta.figure),
       head: meta.head != null ? meta.head : null,
-      source: meta.source != null ? meta.source : null,
       difficulty: meta.difficulty != null ? meta.difficulty : null,
       difficultyMax: meta.difficultyMax != null ? meta.difficultyMax : null,
       textAccumulate: meta.textAccumulate === true,

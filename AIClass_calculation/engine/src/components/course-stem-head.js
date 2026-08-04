@@ -1,14 +1,14 @@
-// 题号行：题号 + 来源 + 难度胶囊，从左依次排列（不靠右撑开）
+// 题号行：题号 + 难度胶囊，从左依次排列（不靠右撑开）
 ;(function () {
   var ns = window.AIClassComponent = window.AIClassComponent || {}
 
   /**
-   * @param {{ head?: string, source?: string, difficulty?: number, difficultyMax?: number }} opts
+   * @param {{ head?: string, difficulty?: number, difficultyMax?: number }} opts
    * @returns {HTMLElement|null}
    */
   function createCourseStemHead(opts) {
     opts = opts || {}
-    if (!opts.head && !opts.source && !(opts.difficulty >= 1)) return null
+    if (!opts.head && !(opts.difficulty >= 1)) return null
 
     var root = document.createElement('div')
     root.className = 'course-stem-head'
@@ -21,13 +21,6 @@
       labelNode.className = 'course-label'
       labelNode.textContent = opts.head
       group.appendChild(labelNode)
-    }
-
-    if (opts.source) {
-      var sourceNode = document.createElement('span')
-      sourceNode.className = 'course-source'
-      sourceNode.textContent = opts.source
-      group.appendChild(sourceNode)
     }
 
     if (opts.difficulty >= 1 && opts.difficulty <= 8 &&

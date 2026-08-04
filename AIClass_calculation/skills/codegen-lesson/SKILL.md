@@ -51,7 +51,7 @@ disable-model-invocation: true
 
 - 未通过 plan:check 就落地
 - 写入图形字段或图形模块
-- 手写顶部题号/来源 HTML
+- 手写顶部题号 HTML
 - 只用 outline 生成模块
 - 在课级 CSS 重写 `.calc-*`（改 `engine/src/styles/calc-explain.css`）
 - 为某一题在 plan/module 里手工 `\\` 换行或额外 region 修补引擎布局（改引擎 + 本 SOP）

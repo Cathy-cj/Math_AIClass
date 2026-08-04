@@ -15,7 +15,6 @@
     "schemaVersion": { "const": 1 },
     "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]{1,47}$" },
     "title": { "type": "string", "minLength": 1 },
-    "source": { "type": "string" },
     "moduleType": { "enum": ["knowledge", "example", "practice", "homework"] },
     "difficulty": { "type": "integer", "minimum": 1, "maximum": 6 },
     "layout": { "const": "top-split" },

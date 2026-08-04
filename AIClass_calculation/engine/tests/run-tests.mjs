@@ -210,8 +210,8 @@ function main() {
     )
     assert(generatedModule.includes('"label": "例"'), 'Generated example label is not normalized.')
     assert(
-      generatedModule.includes('"source": "（合成测试来源）"'),
-      'Generated module drops the real source.'
+      !/"source"\s*:/.test(generatedModule),
+      'Generated module must not carry course source.'
     )
     assert(
       generatedModule.includes('"layout": "top-split"') &&

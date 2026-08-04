@@ -86,7 +86,6 @@ function renderMetaTable(plan) {
     ['答案', plan.unit ? `${plan.answer} ${plan.unit}` : plan.answer],
     ['题型', plan.moduleType],
     ['星级', plan.difficulty != null ? String(plan.difficulty) : '—'],
-    ['来源', plan.source || '—'],
     ['布局', plan.layout || '—'],
     ['figure 模板', plan.figureTemplate || '—']
   ]

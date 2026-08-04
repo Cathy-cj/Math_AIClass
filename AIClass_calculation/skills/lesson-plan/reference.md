@@ -158,13 +158,12 @@
 - **禁止** plan 顶层或 step 写 `problemBrief`（不上屏；备课字段留在 outline）
 - `layout` — 必填，固定为 `"top-split"`（schema 强制）
 - 呈现传参：`.calc-*`、要点/详解/答案 — 见 [calculation-marks.md](calculation-marks.md)
-- `source` — 仅填写真实题目来源；未知时留空，不用题型名称代替
 - `quickQA` — 仅例题填写。它是独立于 `steps[]` 的顶部快问快答配置；codegen 自动产生打开、显示问题、显示答案动作。
 - `quickQALayout` — 例题固定为 `"above-body"`，把快问快答显示在例题容器顶部。
 
 ### 顶部题号契约
 
-- Plan 只声明 `moduleType`、真实 `source` 与课程顺序，不手写题号
+- Plan 只声明 `moduleType` 与课程顺序，不手写题号；不再填写或上屏题目来源
 - codegen 按题型生成顶部标签：`example → 例`、`practice → 练`、`homework → 作业`（无序号）
 - action 前缀用 `例_` / `练_` / `作业_`（与 `actionPrefix` 一致，无序号）
 - 完整 `title` 是模块标题，不作为 `.course-label`
