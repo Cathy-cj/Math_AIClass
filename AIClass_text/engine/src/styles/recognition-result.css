@@ -1,0 +1,27 @@
+.cc-recognition-result {
+  margin: 0 0 var(--lf-block-gap, 16px);
+  padding: 14px 16px;
+  border: 1px solid #b9d7f5;
+  border-radius: 12px;
+  background: #f5faff;
+  color: var(--cc-ink, var(--lf-ink));
+}
+
+.cc-recognition-result-title {
+  margin-bottom: 8px;
+  color: #175ea8;
+  font-size: 0.82em;
+  font-weight: 700;
+}
+
+.cc-recognition-result-content {
+  overflow-x: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.cc-recognition-result-content .katex-display {
+  margin: 0.65em 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+}

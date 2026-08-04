@@ -376,6 +376,34 @@
     return out
   }
 
+
+  CourseContainer.prototype._recognitionResultTarget = function () {
+    if (this.layout === 'left-right' || this.layout === 'text-only') {
+      return this.scrollStackEl || this.scrollRightEl
+    }
+    if (this.layout === 'top-split') return this.scrollRightEl || this.scrollEl
+    return this.scrollEl
+  }
+
+  CourseContainer.prototype.showRecognitionResult = function (content) {
+    var target = this._recognitionResultTarget()
+    if (!target || !window.AIClassRecognitionResult) return null
+
+    this.clearRecognitionResult()
+    var card = AIClassRecognitionResult.create(content)
+    target.insertBefore(card, target.firstChild)
+    if (target.scrollTop != null) target.scrollTop = 0
+    return card
+  }
+
+  CourseContainer.prototype.clearRecognitionResult = function () {
+    var target = this._recognitionResultTarget()
+    if (!target || !target.querySelectorAll) return
+    target.querySelectorAll('.cc-recognition-result').forEach(function (node) {
+      if (node.parentNode) node.parentNode.removeChild(node)
+    })
+  }
+
   CourseContainer.prototype.setFigureState = function (state, opts) {
     opts = opts || {}
     if (this.figureHost && typeof this.figureHost.setState === 'function') {

@@ -36,18 +36,68 @@ await page.waitForFunction(() => window.AIClassMessageBridge && window.__courseS
   timeout: 10000
 })
 
-const result = await page.evaluate(() => {
+const result = await page.evaluate(async () => {
   window._frameworkLog = []
   window.__onCourseMessage = (payload) => window._frameworkLog.push(payload)
 
   window.AIClassMessageBridge.handleMessage({ data: { action: '测试_开始' } })
   window.AIClassMessageBridge.handleMessage({ data: { action: '测试_步骤01' } })
+  var logCountBeforeRecognition = window._frameworkLog.length
+  window.AIClassMessageBridge.handleMessage({
+    data: {
+      action: '作答结果_回显',
+      params: {
+        content: '识别到：$x=3$，验算：$2x+1=7$',
+        targetAction: '测试_开始'
+      }
+    }
+  })
+  window.AIClassMessageBridge.handleMessage({
+    data: {
+      action: '作答结果_回显',
+      params: {
+        content: '更新结果：$x=4
+
+await browser.close()
+
+if (errors.length) throw new Error(`Page errors:\n${errors.join('\n')}`)
+if (networkRequests.length) throw new Error(`Unexpected network requests:\n${networkRequests.join('\n')}`)
+if (!result.log.some((item) => item.type === 'step_ok')) throw new Error('Start action did not emit step_ok.')
+if (!result.log.some((item) => item.type === 'side_effect_ok')) throw new Error('Side effect did not emit side_effect_ok.')
+if (!result.hasFigure) throw new Error('Synthetic Figure was not mounted.')
+if (!result.hasChoice) throw new Error('Synthetic choice was not rendered.')
+if (!result.bodyText.includes('合成内容 A')) throw new Error('Synthetic text was not rendered.')
+
+console.log('Browser smoke test passed.')
+,
+        targetAction: '测试_开始'
+      }
+    }
+  })
+  await new Promise((resolve) => setTimeout(resolve, 250))
+  var recognitionCards = document.querySelectorAll('.cc-recognition-result')
+  var recognitionCard = recognitionCards[0]
+  var targetStack = recognitionCard && recognitionCard.parentElement
+  var cardIsFirst = !!(recognitionCard && targetStack && targetStack.firstElementChild === recognitionCard)
+  var logAfterRecognition = window._frameworkLog.slice(logCountBeforeRecognition)
+  window.AIClassMessageBridge.handleMessage({
+    data: {
+      action: '作答结果_清除',
+      params: { targetAction: '测试_开始' }
+    }
+  })
 
   return {
     log: window._frameworkLog.slice(),
     hasFigure: !!document.querySelector('[data-figure-state], svg'),
     hasChoice: !!document.querySelector('.aic-choice-option, [data-value="A"]'),
-    bodyText: document.body.innerText
+    bodyText: document.body.innerText,
+    recognitionCardCountBeforeClear: recognitionCards.length,
+    recognitionText: recognitionCard && recognitionCard.textContent,
+    recognitionHasLatex: !!(recognitionCard && recognitionCard.querySelector('.katex')),
+    recognitionCardIsFirst: cardIsFirst,
+    recognitionLogs: logAfterRecognition,
+    recognitionCardCountAfterClear: document.querySelectorAll('.cc-recognition-result').length
   }
 })
 
