@@ -68,12 +68,12 @@
     {
       name: '作答结果_回显',
       params: ['content', 'targetAction'],
-      description: '在目标练习题右侧顶部回显 Agent 返回的文字与 LaTeX；不判题、不提交、不推进步骤'
+      description: '在目标练习题左栏正文讲解上方回显 Agent 返回的文字与 LaTeX；不判题、不提交、不推进步骤'
     },
     {
       name: '作答结果_清除',
       params: ['targetAction'],
-      description: '清除目标练习题右侧顶部的作答结果'
+      description: '清除目标练习题左栏正文讲解上方的作答结果'
     }
   ]
 

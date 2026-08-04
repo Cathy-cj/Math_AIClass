@@ -381,7 +381,10 @@
     if (this.layout === 'left-right' || this.layout === 'text-only') {
       return this.scrollStackEl || this.scrollRightEl
     }
-    if (this.layout === 'top-split') return this.scrollRightEl || this.scrollEl
+    // top-split：挂在左栏正文讲解流顶部，随后随自动滚动顶出视口
+    if (this.layout === 'top-split') {
+      return this.scrollLeftEl || this.scrollEl
+    }
     return this.scrollEl
   }
 

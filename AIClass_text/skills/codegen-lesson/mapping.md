@@ -94,6 +94,6 @@ text-only 多环节使用 `interleaved`：每个 step 的 `group` 对应一个
 }
 ```
 
-`content` 是文字和 `$...$` / `$$...$$` LaTeX 的混合内容。它仅在该题右侧滚动区顶部
-回显；不参与 `user_submitted`、前端判题或 action 推进。需要移除时发送
+`content` 是文字和 `$...$` / `$$...$$` LaTeX 的混合内容。它仅在该题左栏正文讲解流顶部
+回显，随后随讲解推进被自动滚动顶出；不参与 `user_submitted`、前端判题或 action 推进。需要移除时发送
 `作答结果_清除` 并传入同一 `targetAction`。
