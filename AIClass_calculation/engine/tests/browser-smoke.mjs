@@ -66,6 +66,11 @@ const result = await page.evaluate(async () => {
   var recognitionCard = recognitionCards[0]
   var targetStack = recognitionCard && recognitionCard.parentElement
   var cardIsFirst = !!(recognitionCard && targetStack && targetStack.firstElementChild === recognitionCard)
+  var cardInLeftScroll = !!(
+    recognitionCard &&
+    recognitionCard.closest &&
+    recognitionCard.closest('.course-scroll-left')
+  )
   var logAfterRecognition = window._frameworkLog.slice(logCountBeforeRecognition)
   window.AIClassMessageBridge.handleMessage({
     data: {
@@ -83,6 +88,7 @@ const result = await page.evaluate(async () => {
     recognitionText: recognitionCard && recognitionCard.textContent,
     recognitionHasLatex: !!(recognitionCard && recognitionCard.querySelector('.katex')),
     recognitionCardIsFirst: cardIsFirst,
+    recognitionCardInLeftScroll: cardInLeftScroll,
     recognitionLogs: logAfterRecognition,
     recognitionCardCountAfterClear: document.querySelectorAll('.cc-recognition-result').length
   }
@@ -103,6 +109,9 @@ if (result.recognitionCardCountBeforeClear !== 1) {
 if (!result.recognitionText.includes('更新结果')) throw new Error('Recognition result did not render text.')
 if (!result.recognitionHasLatex) throw new Error('Recognition result did not render KaTeX.')
 if (!result.recognitionCardIsFirst) throw new Error('Recognition result is not at the target scroll area top.')
+if (!result.recognitionCardInLeftScroll) {
+  throw new Error('Recognition result must mount in left explanation scroll (.course-scroll-left).')
+}
 if (!result.recognitionLogs.some((item) => item.type === 'answer_result_shown')) {
   throw new Error('Answer result did not emit answer_result_shown.')
 }
