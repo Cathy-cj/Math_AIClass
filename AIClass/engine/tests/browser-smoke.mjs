@@ -45,7 +45,7 @@ const result = await page.evaluate(async () => {
   var logCountBeforeRecognition = window._frameworkLog.length
   window.AIClassMessageBridge.handleMessage({
     data: {
-      action: '识别结果_回显',
+      action: '作答结果_回显',
       params: {
         content: '识别到：$x=3$，验算：$$2x+1=7$$',
         targetAction: '测试_开始'
@@ -54,7 +54,7 @@ const result = await page.evaluate(async () => {
   })
   window.AIClassMessageBridge.handleMessage({
     data: {
-      action: '识别结果_回显',
+      action: '作答结果_回显',
       params: {
         content: '更新结果：$x=4$',
         targetAction: '测试_开始'
@@ -69,7 +69,7 @@ const result = await page.evaluate(async () => {
   var logAfterRecognition = window._frameworkLog.slice(logCountBeforeRecognition)
   window.AIClassMessageBridge.handleMessage({
     data: {
-      action: '识别结果_清除',
+      action: '作答结果_清除',
       params: { targetAction: '测试_开始' }
     }
   })
@@ -103,8 +103,8 @@ if (result.recognitionCardCountBeforeClear !== 1) {
 if (!result.recognitionText.includes('更新结果')) throw new Error('Recognition result did not render text.')
 if (!result.recognitionHasLatex) throw new Error('Recognition result did not render KaTeX.')
 if (!result.recognitionCardIsFirst) throw new Error('Recognition result is not at the target scroll area top.')
-if (!result.recognitionLogs.some((item) => item.type === 'recognition_result_shown')) {
-  throw new Error('Recognition result did not emit recognition_result_shown.')
+if (!result.recognitionLogs.some((item) => item.type === 'answer_result_shown')) {
+  throw new Error('Answer result did not emit answer_result_shown.')
 }
 if (result.recognitionLogs.some((item) => item.type === 'step_ok' || item.type === 'user_submitted')) {
   throw new Error('Recognition result must not advance a step or submit an answer.')

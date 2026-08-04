@@ -76,14 +76,14 @@ left-right 多环节使用 `interleaved`：每个 step 的 `group` 对应一个
 
 生成器只按 `guidanceChain + group` 路由；`phase` 和 stage slug 均为题内语义，不参与分支判断。`group: 0` 仅为开场且不显示环节。`problemBrief` 固定嵌入第一个“审题环节”槽位，不作为 push 或独立卡片。
 
-## Agent 识别结果回显
+## Agent 作答结果回显
 
-课程模块不生成手写板或识别结果 `push`。练习题入口 action 已执行、目标容器创建后，
+课程模块不生成手写板或作答结果 `push`。练习题入口 action 已执行、目标容器创建后，
 宿主 Agent 完成外部手写板/OCR，再向 iframe 发送：
 
 ```js
 {
-  action: '识别结果_回显',
+  action: '作答结果_回显',
   params: {
     content: '识别到：$x=3$，验算：$$2x+1=7$$',
     targetAction: '{该练习题入口 action}'
@@ -93,7 +93,7 @@ left-right 多环节使用 `interleaved`：每个 step 的 `group` 对应一个
 
 `content` 是文字和 `$...$` / `$$...$$` LaTeX 的混合内容。它仅在该题右侧滚动区顶部
 回显；不参与 `user_submitted`、前端判题或 action 推进。需要移除时发送
-`识别结果_清除` 并传入同一 `targetAction`。
+`作答结果_清除` 并传入同一 `targetAction`。
 
 ## figure
 
