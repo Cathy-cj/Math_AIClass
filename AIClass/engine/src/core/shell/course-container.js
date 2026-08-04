@@ -365,9 +365,26 @@
   }
 
   CourseContainer.prototype._recognitionResultTarget = function () {
+    // left-right：右边正文栈（题干在 top，回显挂在正文流顶部、讲解之上）
     if (this.layout === 'left-right') return this.scrollStackEl || this.scrollRightEl
     if (this.layout === 'top-split') return this.scrollRightEl || this.scrollEl
     return this.scrollEl
+  }
+
+  CourseContainer.prototype._insertRecognitionResultCard = function (target, card) {
+    if (!target || !card) return
+    var brief = this.problemBriefEl
+    if (brief && brief.parentNode === target) {
+      if (brief.nextSibling) target.insertBefore(card, brief.nextSibling)
+      else target.appendChild(card)
+      return
+    }
+    var guide = target.querySelector && target.querySelector('.cc-guide-panel, .cc-guide-section')
+    if (guide && guide.parentNode === target) {
+      target.insertBefore(card, guide)
+      return
+    }
+    target.insertBefore(card, target.firstChild)
   }
 
   CourseContainer.prototype.showRecognitionResult = function (content) {
@@ -376,8 +393,9 @@
 
     this.clearRecognitionResult()
     var card = AIClassRecognitionResult.create(content)
-    target.insertBefore(card, target.firstChild)
-    if (target.scrollTop != null) target.scrollTop = 0
+    this._insertRecognitionResultCard(target, card)
+    var scrollEl = this.scrollRightEl || this.scrollEl || target
+    if (scrollEl && scrollEl.scrollTop != null) scrollEl.scrollTop = 0
     return card
   }
 

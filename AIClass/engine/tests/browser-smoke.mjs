@@ -65,7 +65,14 @@ const result = await page.evaluate(async () => {
   var recognitionCards = document.querySelectorAll('.cc-recognition-result')
   var recognitionCard = recognitionCards[0]
   var targetStack = recognitionCard && recognitionCard.parentElement
-  var cardIsFirst = !!(recognitionCard && targetStack && targetStack.firstElementChild === recognitionCard)
+  var cardInRightStack = !!(
+    recognitionCard &&
+    recognitionCard.closest &&
+    recognitionCard.closest('.course-scroll-stack')
+  )
+  var guide = targetStack && targetStack.querySelector('.cc-guide-panel, .cc-guide-section')
+  var cardBeforeGuide = !guide || !!(recognitionCard.compareDocumentPosition &&
+    (recognitionCard.compareDocumentPosition(guide) & Node.DOCUMENT_POSITION_FOLLOWING))
   var logAfterRecognition = window._frameworkLog.slice(logCountBeforeRecognition)
   window.AIClassMessageBridge.handleMessage({
     data: {
@@ -82,7 +89,8 @@ const result = await page.evaluate(async () => {
     recognitionCardCountBeforeClear: recognitionCards.length,
     recognitionText: recognitionCard && recognitionCard.textContent,
     recognitionHasLatex: !!(recognitionCard && recognitionCard.querySelector('.katex')),
-    recognitionCardIsFirst: cardIsFirst,
+    recognitionCardInRightStack: cardInRightStack,
+    recognitionCardBeforeGuide: cardBeforeGuide,
     recognitionLogs: logAfterRecognition,
     recognitionCardCountAfterClear: document.querySelectorAll('.cc-recognition-result').length
   }
@@ -102,7 +110,12 @@ if (result.recognitionCardCountBeforeClear !== 1) {
 }
 if (!result.recognitionText.includes('更新结果')) throw new Error('Recognition result did not render text.')
 if (!result.recognitionHasLatex) throw new Error('Recognition result did not render KaTeX.')
-if (!result.recognitionCardIsFirst) throw new Error('Recognition result is not at the target scroll area top.')
+if (!result.recognitionCardInRightStack) {
+  throw new Error('Recognition result must mount in right main stack (.course-scroll-stack).')
+}
+if (!result.recognitionCardBeforeGuide) {
+  throw new Error('Recognition result must sit above guidance / explanation content.')
+}
 if (!result.recognitionLogs.some((item) => item.type === 'answer_result_shown')) {
   throw new Error('Answer result did not emit answer_result_shown.')
 }
