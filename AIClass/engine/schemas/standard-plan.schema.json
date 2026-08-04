@@ -1,0 +1,160 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aiclass.local/schemas/standard-plan.schema.json",
+  "title": "AIClass standard plan",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["schemaVersion", "id", "title", "steps"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{1,47}$" },
+    "title": { "type": "string", "minLength": 1 },
+    "source": { "type": "string" },
+    "moduleType": { "enum": ["knowledge", "example", "practice", "homework"] },
+    "difficulty": { "type": "integer", "minimum": 1, "maximum": 6 },
+    "layout": {
+      "enum": ["text-only", "figure-text", "top-split", "left-right", "text-over-figure"]
+    },
+    "figureTemplate": {
+      "type": ["string", "null"],
+      "pattern": "^[a-z][a-z0-9-]*$"
+    },
+    "guidanceLayout": { "enum": ["stacked", "interleaved"] },
+    "quickQALayout": { "enum": ["above-body"] },
+    "lessonContext": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "slot": { "enum": ["unitIntro", "firstExample", "afterExample", "homework", "standalone"] },
+        "afterPlanId": { "type": ["string", "null"] },
+        "archetype": { "type": "string" }
+      }
+    },
+    "problemBrief": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["known", "ask"],
+      "properties": {
+        "known": {
+          "oneOf": [
+            { "type": "string", "minLength": 1 },
+            {
+              "type": "array",
+              "minItems": 1,
+              "items": { "type": "string", "minLength": 1 }
+            }
+          ]
+        },
+        "ask": { "type": "string", "minLength": 1 },
+        "key": { "type": "string", "minLength": 1 }
+      }
+    },
+    "layoutParams": {
+      "type": "object",
+      "additionalProperties": { "type": ["string", "number", "boolean"] }
+    },
+    "style": {
+      "type": "object",
+      "additionalProperties": { "type": ["string", "number", "boolean"] }
+    },
+    "guidanceChain": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["title"],
+        "properties": {
+          "title": { "type": "string" },
+          "desc": { "type": "string" }
+        }
+      }
+    },
+    "steps": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["id", "action", "agent"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "action": { "type": "string", "minLength": 1 },
+          "phase": { "type": "string" },
+          "group": { "type": "integer", "minimum": 0 },
+          "retainPush": { "type": ["boolean", "array"] },
+          "scroll": { "type": "object" },
+          "stemClass": { "type": "string" },
+          "guidanceSub": { "type": "string" },
+          "problemBrief": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "known": { "type": "integer", "minimum": 0 },
+              "ask": { "type": "boolean" },
+              "key": { "type": "boolean" }
+            }
+          },
+          "agent": {
+            "type": "object",
+            "required": ["type", "description"],
+            "properties": {
+              "type": { "type": "string" },
+              "description": { "type": "string" }
+            }
+          },
+          "figure": {
+            "type": "object",
+            "properties": {
+              "state": { "type": "string" },
+              "note": { "type": "string" },
+              "actions": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["op"],
+                  "properties": {
+                    "op": { "type": "string" },
+                    "targets": {
+                      "type": "array",
+                      "items": { "type": "string" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "push": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true,
+              "required": ["type"],
+              "properties": {
+                "type": { "type": "string" },
+                "region": { "enum": ["top", "left", "right"] },
+                "replaceKey": { "type": "string" },
+                "lines": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "quickQA": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["id", "question", "answer"],
+        "properties": {
+          "id": { "type": "string" },
+          "question": { "type": "string" },
+          "answer": { "type": "string", "minLength": 1 },
+          "fillBlank": { "type": "boolean" }
+        }
+      }
+    }
+  }
+}

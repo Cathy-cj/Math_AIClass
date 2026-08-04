@@ -1,0 +1,14 @@
+{
+  "referenceOnly": true,
+  "sentinel": "REFERENCE_ONLY_DO_NOT_COPY",
+  "archetype": "direct-formula",
+  "outline": {
+    "goal": "Determine the requested quantity from one governing relation.",
+    "stages": [
+      {"id": "identify", "intent": "Map knowns, unknown, and units."},
+      {"id": "select", "intent": "Choose and justify the applicable relation."},
+      {"id": "solve", "intent": "Substitute symbols or normalized values and transform."},
+      {"id": "check", "intent": "Check units, conditions, and plausibility."}
+    ]
+  }
+}

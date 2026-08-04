@@ -1,0 +1,124 @@
+/* 纯文字讲解块样式（tx-*）— 从 module_template lesson.css 上浮 */
+
+.course-container .lf-block.tx-label {
+  margin: 0.85em 0 0.4em;
+}
+
+.course-container .lf-block.tx-label .lf-section-tag {
+  color: #2563eb;
+  font-weight: 700;
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin-right: 0.35em;
+}
+
+.course-container .lf-block.tx-label .lf-section-title {
+  color: #1e293b;
+  font-weight: 650;
+  font-size: 1.02em;
+}
+
+.course-container .lf-block.tx-label--answer {
+  margin: 0.75em 0 0.55em;
+  padding: 0.5em 0.85em;
+  border-radius: 10px;
+  border: 1px solid rgba(22, 163, 74, 0.35);
+  border-left: 3px solid #16a34a;
+  background: linear-gradient(105deg, rgba(22, 163, 74, 0.12) 0%, rgba(240, 253, 244, 0.4) 100%);
+}
+
+.course-container .lf-block.tx-label--answer .lf-section-tag {
+  color: #0f172a;
+}
+
+.course-container .lf-block.tx-label--answer .lf-section-title {
+  color: #0f172a;
+  font-weight: 650;
+  background: transparent;
+}
+
+.course-container .lf-block.tx-stem {
+  margin: 0.25em 0 0.55em;
+  font-weight: 650;
+  color: #0f172a;
+}
+
+/* 高亮传参契约（text-only）：
+   - 题干同步：tx-stem-mark + stemClass 加 --lit → 红
+   - 讲解关键词：--em → 黄（讲解区误用 --lit 也自动变黄）
+   - 结论/得数：--green → 绿
+*/
+.course-container .tx-stem-mark {
+  font-weight: inherit;
+  line-height: inherit;
+  vertical-align: baseline;
+  border-radius: 2px;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+.course-container .tx-stem-mark--lit {
+  color: inherit;
+  background: var(--marker-red-bg, rgba(239, 68, 68, 0.28));
+}
+
+.course-container .tx-stem-mark--lit .katex {
+  color: inherit;
+}
+
+.course-container .tx-stem-mark--em,
+.course-container .course-scroll-main .tx-stem-mark--lit,
+.course-container .cc-guide-slot .tx-stem-mark--lit {
+  color: inherit;
+  background: var(--marker-yellow-bg, rgba(251, 191, 36, 0.28));
+}
+
+.course-container .tx-stem-mark--em .katex,
+.course-container .course-scroll-main .tx-stem-mark--lit .katex,
+.course-container .cc-guide-slot .tx-stem-mark--lit .katex {
+  color: inherit;
+}
+
+.course-container .tx-stem-mark--green {
+  color: #0f172a;
+  background: rgba(22, 163, 74, 0.14);
+  font-weight: 700;
+}
+
+.course-container .tx-stem-mark--green .katex {
+  color: #0f172a;
+}
+
+.course-container .lf-block.tx-note {
+  margin: 0.28em 0;
+}
+
+.course-container .lf-block.tx-note--center {
+  text-align: center;
+}
+
+.course-container .lf-block.tx-tex {
+  margin: 0.2em 0 0.45em;
+  text-align: left;
+}
+
+.course-container .lf-block.tx-tex .lf-latex,
+.course-container .lf-block.tx-tex .katex-display {
+  margin: 0;
+  text-align: left !important;
+}
+
+.course-container .lf-block.tx-tex.tx-tex--center,
+.course-container .lf-block.tx-tex.tx-tex--center .lf-latex,
+.course-container .lf-block.tx-tex.tx-tex--center .katex-display {
+  text-align: center !important;
+}
+
+.course-container .lf-block.tx-choice {
+  margin: 0.55em 0 0.85em;
+}
+
+.course-container .aic-choice-label .katex {
+  font-size: 1.05em;
+}

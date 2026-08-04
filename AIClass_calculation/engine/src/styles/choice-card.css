@@ -1,0 +1,95 @@
+/* 选择题卡片 — 圆角边框 + 蓝色胶囊 + 黑色题干 + 选项区 */
+
+.aic-choice-card {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  padding: 10px 12px 8px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  background: #fff;
+  font-size: var(--cc-body-size, var(--lf-body-size, 28px));
+  line-height: 1.45;
+  color: var(--cc-ink, var(--lf-ink, #0f172a));
+  touch-action: pan-y;
+}
+
+.aic-choice-card__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 12px;
+  margin-bottom: 10px;
+}
+
+.aic-choice-card__badge {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 26px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  border: 1px dashed rgba(37, 99, 235, 0.45);
+  background: rgba(37, 99, 235, 0.1);
+  color: #1d4ed8;
+  font-size: calc(var(--cc-body-size, var(--lf-body-size, 28px)) * 0.78);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.aic-choice-card__question {
+  flex: 1;
+  min-width: 0;
+  color: var(--cc-ink, #0f172a);
+  font-weight: 400;
+}
+
+.aic-choice-card__body .aic-choice {
+  width: 100%;
+}
+
+.aic-choice-card .aic-choice-option,
+.aic-choice-card .aic-choice-label {
+  color: var(--cc-ink, #0f172a);
+}
+
+/* 引导链激活态节点为蓝色，选择题卡片内文字保持黑色 */
+.course-container .cc-guide-node.is-active .aic-choice-card,
+.course-container .cc-guide-node.is-active .aic-choice-card__question,
+.course-container .cc-guide-node.is-active .aic-choice-card .aic-choice-option,
+.course-container .cc-guide-node.is-active .aic-choice-card .aic-choice-label {
+  color: var(--cc-ink, #0f172a);
+}
+
+/* 引导链内：口答卡片下方叠放选择题 */
+.course-container .cc-guide-sub .aic-oral-card + .aic-choice-card {
+  margin-top: 10px;
+}
+
+.course-container .cc-guide-sub .aic-choice-card {
+  font-size: inherit;
+}
+
+.course-container .cc-guide-sub .aic-choice-card__badge {
+  font-size: 0.78em;
+}
+
+/* 穿插大纲槽位 */
+.course-container[data-guidance-layout="interleaved"] .cc-guide-slot .aic-choice-card {
+  font-size: var(--cc-guide-slot-size);
+}
+
+.course-container[data-guidance-layout="interleaved"] .cc-guide-slot .aic-choice-card__question {
+  font-size: var(--cc-guide-title-size);
+  font-weight: 400;
+}
+
+.course-container[data-guidance-layout="interleaved"] .cc-guide-slot .aic-choice-card__badge {
+  font-size: 0.78em;
+}
+
+.course-container[data-guidance-layout="interleaved"] .cc-guide-slot .aic-choice-card .aic-choice-option--paper,
+.course-container[data-guidance-layout="interleaved"] .cc-guide-slot .aic-choice-card .aic-choice-option--plain {
+  font-size: calc(var(--cc-guide-slot-size) * 0.88);
+}

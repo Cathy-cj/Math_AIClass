@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aiclass.local/schemas/course.schema.json",
+  "title": "AIClass course",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "courseId", "title", "version", "engine"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "schemaVersion": { "const": 1 },
+    "courseId": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{1,47}$"
+    },
+    "title": { "type": "string", "minLength": 1 },
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?$"
+    },
+    "engine": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["range"],
+      "properties": {
+        "range": { "type": "string", "minLength": 1 },
+        "requiredCapabilities": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" }
+        }
+      }
+    },
+    "authoring": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["rootKey", "problems"],
+      "properties": {
+        "rootKey": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_-]*$" },
+        "problems": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["problemId", "order", "actionPrefix"],
+            "properties": {
+              "problemId": {
+                "type": "string",
+                "pattern": "^[a-z0-9][a-z0-9-]{1,47}$"
+              },
+              "order": { "type": "integer", "minimum": 1 },
+              "actionPrefix": { "type": "string", "minLength": 1, "maxLength": 20 },
+              "planPath": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "authoredModules": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string" }
+    },
+    "extensions": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string" }
+    },
+    "actionCatalogPath": {
+      "type": "string",
+      "pattern": "^[^\\\\]+(?:[\\\\/][^\\\\]+)*\\.json$"
+    },
+    "lessonMeta": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "theme": {
+      "type": "object",
+      "additionalProperties": { "type": ["string", "number", "boolean"] }
+    }
+  }
+}

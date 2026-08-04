@@ -1,0 +1,248 @@
+/* 题号行：题号 + 来源 + 难度胶囊（与 AIClass 主仓对齐） */
+.course-stem-head {
+  display: block;
+  width: 100%;
+  margin: 0 0 0.42em;
+  line-height: 1;
+}
+
+.course-stem-head__group {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  max-width: 100%;
+  gap: 0.45em;
+  height: 1.42em;
+  min-height: 1.42em;
+}
+
+.course-stem-head .course-label {
+  display: inline-flex;
+  align-items: center;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  font-size: 1.05em;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  flex-shrink: 0;
+  color: var(--aic-course-label-color, #1a4fbf);
+}
+
+.course-stem-head .course-source {
+  display: inline-flex;
+  align-items: center;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  font-size: 0.9em;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  color: #5b6b7f;
+  flex-shrink: 0;
+}
+
+/* 纯文字讲解区 — 原样上浮 module_template/lesson/styles/lesson.css */
+
+.course-container[data-layout="text-only"] {
+  --cc-guide-title-size: calc(var(--cc-body-size, 24px) * 0.92);
+  --cc-guide-desc-size: calc(var(--cc-body-size, 24px) * 0.78);
+  --cc-guide-slot-size: calc(var(--cc-body-size, 24px) * 0.92);
+  /* 轨道列：圆点 + 竖茎同属 .cc-guide-track，共用下列 token */
+  --cc-guide-track-width: 22px;
+  --cc-guide-dot-left: 6px;
+  --cc-guide-dot-size: 8px;
+  --cc-guide-dot-top: 14px;
+  --cc-guide-rail-width: 2px;
+  --cc-guide-rail-x: calc(var(--cc-guide-dot-left) + var(--cc-guide-dot-size) / 2 - var(--cc-guide-rail-width) / 2);
+  --cc-guide-rail-image: linear-gradient(to bottom, rgba(22, 163, 74, 0.7) 55%, transparent 55%);
+  --cc-guide-rail-size: 2px 10px;
+}
+
+.course-container[data-layout="text-only"][data-guidance-layout="interleaved"] .cc-guide-panel {
+  position: relative;
+  margin: 0.35em 0 0.75em;
+}
+
+.course-container[data-layout="text-only"][data-guidance-layout="interleaved"] .cc-guide-panel.cc-guide-panel--collapsed {
+  display: none;
+}
+
+@keyframes cc-guide-dash-march {
+  from { background-position: 0 0; }
+  to { background-position: 0 10px; }
+}
+
+.course-container[data-layout="text-only"][data-guidance-layout="interleaved"] .cc-guide-section,
+.course-container[data-layout="text-only"][data-guidance-layout="interleaved"] .cc-guide-slot {
+  position: relative;
+  z-index: 1;
+  /* 左留给轨道列；竖向间距用 padding，避免 margin 把茎切断 */
+  margin: 0;
+  padding-left: var(--cc-guide-track-width);
+}
+
+.course-container[data-layout="text-only"][data-guidance-layout="interleaved"] .cc-guide-section {
+  z-index: 2;
+  padding-top: 4px;
+  padding-bottom: 6px;
+}
+
+.course-container[data-layout="text-only"][data-guidance-layout="interleaved"] .cc-guide-section.is-hidden,
+.course-container[data-layout="text-only"][data-guidance-layout="interleaved"] .cc-guide-slot.is-hidden {
+  display: none;
+}
+
+.course-container[data-layout="text-only"][data-guidance-layout="interleaved"] .cc-guide-slot {
+  padding-top: 2px;
+  padding-bottom: 10px;
+  font-size: var(--cc-guide-slot-size);
+}
+
+/* 轨道列绝对贴满父级高度：圆点+竖茎同轨，不靠 grid 跨行 */
+.course-container[data-layout="text-only"][data-guidance-layout="interleaved"] .cc-guide-track {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: var(--cc-guide-track-width);
+  pointer-events: none;
+}
+
+.course-container[data-layout="text-only"][data-guidance-layout="interleaved"] .cc-guide-section > .cc-guide-node,
+.course-container[data-layout="text-only"][data-guidance-layout="interleaved"] .cc-guide-slot > :not(.cc-guide-track) {
+  min-width: 0;
+}
+
+.course-container[data-layout="text-only"][data-guidance-layout="interleaved"] .cc-guide-dot {
+  position: absolute;
+  left: var(--cc-guide-dot-left);
+  top: var(--cc-guide-dot-top);
+  width: var(--cc-guide-dot-size);
+  height: var(--cc-guide-dot-size);
+  border-radius: 50%;
+  background: #cbd5e1;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px #cbd5e1;
+  z-index: 2;
+}
+
+.course-container[data-layout="text-only"][data-guidance-layout="interleaved"] .cc-guide-stem {
+  position: absolute;
+  left: var(--cc-guide-rail-x);
+  top: 0;
+  bottom: 0;
+  width: var(--cc-guide-rail-width);
+  background-image: var(--cc-guide-rail-image);
+  background-size: var(--cc-guide-rail-size);
+  background-repeat: repeat-y;
+  animation: cc-guide-dash-march 0.75s linear infinite;
+  z-index: 0;
+}
+
+/* 首环：从圆点中心向下；末环：从顶接到圆点中心；中间环全高。圆点盖在茎上 */
+.course-container[data-layout="text-only"][data-guidance-layout="interleaved"]
+  .cc-guide-section.is-rail-start:not(.is-rail-end) > .cc-guide-track > .cc-guide-stem {
+  top: calc(var(--cc-guide-dot-top) + var(--cc-guide-dot-size) / 2);
+  bottom: 0;
+}
+
+.course-container[data-layout="text-only"][data-guidance-layout="interleaved"]
+  .cc-guide-section.is-rail-end:not(.is-rail-start) > .cc-guide-track > .cc-guide-stem {
+  top: 0;
+  bottom: auto;
+  height: calc(var(--cc-guide-dot-top) + var(--cc-guide-dot-size) / 2);
+}
+
+.course-container[data-layout="text-only"][data-guidance-layout="interleaved"]
+  .cc-guide-section:not(.is-rail-start):not(.is-rail-end) > .cc-guide-track > .cc-guide-stem {
+  top: 0;
+  bottom: 0;
+}
+
+/* 仅一环：没有上下邻居，不出茎 */
+.course-container[data-layout="text-only"][data-guidance-layout="interleaved"]
+  .cc-guide-section.is-rail-start.is-rail-end > .cc-guide-track > .cc-guide-stem {
+  display: none;
+}
+
+/* 末环自己的讲解槽不再向下延伸 */
+.course-container[data-layout="text-only"][data-guidance-layout="interleaved"]
+  .cc-guide-slot.is-rail-end > .cc-guide-track > .cc-guide-stem {
+  display: none;
+}
+
+.course-container[data-layout="text-only"][data-guidance-layout="interleaved"] .cc-guide-slot .lf-block,
+.course-container[data-layout="text-only"][data-guidance-layout="interleaved"] .cc-guide-slot .lf-text-line,
+.course-container[data-layout="text-only"][data-guidance-layout="interleaved"] .cc-guide-slot .lf-section,
+.course-container[data-layout="text-only"][data-guidance-layout="interleaved"] .cc-guide-slot .lf-block-choice {
+  font-size: var(--cc-guide-slot-size);
+}
+
+.course-container[data-layout="text-only"] .cc-guide-node {
+  position: relative;
+  padding: 6px 0;
+  color: var(--cc-muted, #64748b);
+  transition: color 0.2s ease, opacity 0.2s ease;
+}
+
+.course-container[data-layout="text-only"] .cc-guide-title {
+  font-size: var(--cc-guide-title-size);
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.course-container[data-layout="text-only"] .cc-guide-desc {
+  font-size: var(--cc-guide-desc-size);
+  line-height: 1.4;
+  margin-top: 2px;
+  opacity: 0.88;
+}
+
+.course-container[data-layout="text-only"][data-guidance-layout="interleaved"] .cc-guide-desc:not(:empty) {
+  margin-left: 0;
+}
+
+.course-container[data-layout="text-only"] .cc-guide-node.is-hidden {
+  display: none;
+}
+
+.course-container[data-layout="text-only"] .cc-guide-node.is-active {
+  color: #1d4ed8;
+}
+
+.course-container[data-layout="text-only"][data-guidance-layout="interleaved"]
+  .cc-guide-section:has(.cc-guide-node.is-active) .cc-guide-dot {
+  background: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.25);
+}
+
+.course-container[data-layout="text-only"] .cc-guide-node.is-active .cc-guide-title {
+  color: #1e3a8a;
+}
+
+.course-container[data-layout="text-only"] .cc-guide-node.is-done {
+  color: #334155;
+}
+
+.course-container[data-layout="text-only"][data-guidance-layout="interleaved"]
+  .cc-guide-section:has(.cc-guide-node.is-done) .cc-guide-dot {
+  background: #16a34a;
+  box-shadow: 0 0 0 1px #16a34a;
+}
+
+.course-container[data-layout="text-only"] .cc-guide-node.is-pending {
+  opacity: 0.55;
+}
+
+.course-figure .cc-figure-svg {
+  display: block;
+}

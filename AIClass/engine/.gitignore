@@ -1,0 +1,8 @@
+node_modules/
+dist/
+artifacts/
+workspace.local.json
+.tmp-shots/
+*.log
+.DS_Store
+Thumbs.db

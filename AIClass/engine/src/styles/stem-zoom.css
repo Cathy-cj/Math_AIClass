@@ -1,0 +1,296 @@
+/* 题干展开（StemExpand）— 组件唯一入口：stem-zoom.js + 本文件 */
+
+.course-container[data-layout="text-only"] .course-body,
+.course-container[data-layout="top-split"] .course-body,
+.course-container[data-layout="left-right"] .course-body {
+  position: relative;
+}
+
+.course-container[data-layout="text-only"] .course-scroll-top,
+.course-container[data-layout="top-split"] .course-scroll-top,
+.course-container[data-layout="left-right"] .course-scroll-top {
+  position: relative;
+}
+
+/* 带题号行：限高 token + 行高 */
+.course-container[data-layout="text-only"] .course-scroll-top--labeled,
+.course-container[data-layout="top-split"] .course-scroll-top--labeled,
+.course-container[data-layout="left-right"] .course-scroll-top--labeled {
+  --cc-stem-head-h: 1.84em;
+  line-height: var(--cc-line-height, var(--lf-line-height, 1.58));
+}
+
+/* stack 模式：StemExpand 挂载后顶栏不再 sticky，滚动在 inner */
+.course-flow--stack .course-scroll-top--labeled[data-stem-expand="1"] {
+  position: relative;
+  top: auto;
+  z-index: auto;
+  padding-bottom: 0;
+  background: transparent;
+}
+
+/* ── 外壳（挂载 data-stem-expand 后生效）── */
+.course-container[data-layout="text-only"] .course-scroll-top[data-stem-expand="1"],
+.course-container[data-layout="top-split"] .course-scroll-top[data-stem-expand="1"],
+.course-container[data-layout="left-right"] .course-scroll-top[data-stem-expand="1"],
+.course-container[data-layout="text-only"] .course-scroll-top.stem-expand-open,
+.course-container[data-layout="top-split"] .course-scroll-top.stem-expand-open,
+.course-container[data-layout="left-right"] .course-scroll-top.stem-expand-open {
+  --stem-glass-bg: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.68) 0%,
+    rgba(255, 254, 251, 0.52) 100%
+  );
+  --stem-glass-blur: blur(20px) saturate(1.6);
+  --stem-glass-edge: rgba(255, 255, 255, 0.58);
+  --stem-glass-fade-solid: rgba(255, 254, 251, 0.72);
+}
+
+.course-container[data-layout="text-only"] .course-scroll-top[data-stem-expand="1"],
+.course-container[data-layout="top-split"] .course-scroll-top[data-stem-expand="1"],
+.course-container[data-layout="left-right"] .course-scroll-top[data-stem-expand="1"] {
+  max-height: none;
+  overflow: visible;
+  min-height: 0;
+  background: var(--stem-glass-bg);
+  -webkit-backdrop-filter: var(--stem-glass-blur);
+  backdrop-filter: var(--stem-glass-blur);
+  border-radius: 18px;
+  box-shadow:
+    inset 0 0 0 1px var(--stem-glass-edge),
+    0 2px 8px rgba(15, 23, 42, 0.06);
+  transition: max-height 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.course-container[data-layout="text-only"] .course-scroll-top[data-stem-expand="1"].stem-expand-animating,
+.course-container[data-layout="top-split"] .course-scroll-top[data-stem-expand="1"].stem-expand-animating,
+.course-container[data-layout="left-right"] .course-scroll-top[data-stem-expand="1"].stem-expand-animating {
+  overflow: hidden;
+}
+
+/* 题号行随 inner 整体滚动，不 sticky */
+.course-container[data-layout="text-only"] .course-scroll-top[data-stem-expand="1"] .course-stem-head,
+.course-container[data-layout="top-split"] .course-scroll-top[data-stem-expand="1"] .course-stem-head,
+.course-container[data-layout="left-right"] .course-scroll-top[data-stem-expand="1"] .course-stem-head {
+  position: static;
+  z-index: auto;
+  background: transparent;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.course-scroll-top.stem-expand-init,
+.course-scroll-top.stem-expand-init .stem-expand-chrome,
+.course-scroll-top.stem-expand-init .stem-expand-bar,
+.course-scroll-top.stem-expand-init .stem-expand-btn {
+  transition: none !important;
+}
+
+/* ── 滚动层：原生条由 overlay-scrollbar.js 隐藏，自绘细 pill ── */
+.stem-expand-scroll {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  max-height: calc(var(--cc-stem-head-h, 0em) + 3 * var(--cc-line-height, var(--lf-line-height, 1.58)) * 1em);
+}
+
+.stem-expand-scroll.stem-expand-fits {
+  overflow-y: hidden;
+}
+
+.course-scroll-top[data-overlay-scrollbar="1"] .stem-expand-scroll.aic-overlay-scroll {
+  padding-right: var(--aic-overlay-scrollbar-gutter, 14px);
+  box-sizing: border-box;
+}
+
+.course-container[data-layout="text-only"] .course-scroll-top.stem-expand-open .stem-expand-scroll,
+.course-container[data-layout="top-split"] .course-scroll-top.stem-expand-open .stem-expand-scroll,
+.course-container[data-layout="left-right"] .course-scroll-top.stem-expand-open .stem-expand-scroll {
+  max-height: none;
+  padding-bottom: 0;
+  overflow-y: auto;
+}
+
+/* 带题号行时题干排版（inner 结构） */
+.course-scroll-top--labeled .stem-expand-scroll > .course-stem-head + .lf-block-text,
+.course-scroll-top--labeled .stem-expand-scroll > .course-stem-head + .lf-block.tx-stem {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.course-scroll-top--labeled .stem-expand-scroll > .course-stem-head + .lf-block-text .lf-text-line:first-child,
+.course-scroll-top--labeled .stem-expand-scroll > .course-stem-head + .lf-block.tx-stem .lf-text-line:first-child {
+  display: block;
+  margin: 0;
+  line-height: inherit;
+}
+
+.course-scroll-top--labeled .stem-expand-scroll > .course-stem-head + .lf-block-text .lf-text-line:not(:first-child),
+.course-scroll-top--labeled .stem-expand-scroll > .course-stem-head + .lf-block.tx-stem .lf-text-line:not(:first-child) {
+  display: block;
+  margin-top: 0.35em;
+}
+
+.stem-expand-chrome {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.stem-expand-fade {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1.2em;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 254, 251, 0) 0%,
+    rgba(255, 254, 251, 0.32) 75%,
+    var(--stem-glass-fade-solid, rgba(255, 254, 251, 0.72)) 100%
+  );
+}
+
+.stem-expand-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  z-index: 3;
+  display: flex;
+  justify-content: flex-end;
+  align-items: flex-start;
+  height: 0;
+  min-height: 0;
+  margin: 0;
+  padding: 0 calc(var(--cc-scroll-padding, 0px) + 0.55em) 0 0;
+  box-sizing: border-box;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.stem-expand-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.22em;
+  margin: 0;
+  padding: 0.12em 0.38em 0.14em;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #64748b;
+  font-family: inherit;
+  font-size: 0.72em;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  pointer-events: auto;
+  transition:
+    color 0.18s ease,
+    background 0.18s ease,
+    opacity 0.18s ease;
+}
+
+.stem-expand-btn:focus {
+  outline: none;
+}
+
+.stem-expand-btn:focus-visible {
+  outline: 2px solid rgba(26, 79, 191, 0.35);
+  outline-offset: 2px;
+}
+
+.stem-expand-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 0.95em;
+  height: 0.95em;
+  flex-shrink: 0;
+  opacity: 0.72;
+  transition: transform 0.22s ease, opacity 0.18s ease;
+}
+
+.stem-expand-icon svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.stem-expand-label {
+  position: relative;
+  top: 0.02em;
+}
+
+.stem-expand-btn:hover {
+  color: var(--aic-course-label-color, #1a4fbf);
+  background: rgba(26, 79, 191, 0.07);
+}
+
+.stem-expand-btn:hover .stem-expand-icon {
+  opacity: 1;
+}
+
+.stem-expand-btn.is-open,
+.stem-expand-bar.is-open .stem-expand-btn {
+  color: var(--aic-course-label-color, #1a4fbf);
+  background: rgba(26, 79, 191, 0.08);
+}
+
+.stem-expand-btn.is-open .stem-expand-icon,
+.stem-expand-bar.is-open .stem-expand-btn .stem-expand-icon {
+  opacity: 1;
+  transform: rotate(180deg);
+}
+
+.stem-expand-bar.is-open .stem-expand-btn {
+  background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.stem-expand-bar.is-open .stem-expand-btn:hover {
+  background: rgba(255, 255, 255, 0.78);
+}
+
+/* 展开态：同毛玻璃底，仅增高 max-height + 略加深阴影 */
+.course-container[data-layout="text-only"] .course-scroll-top.stem-expand-open,
+.course-container[data-layout="top-split"] .course-scroll-top.stem-expand-open,
+.course-container[data-layout="left-right"] .course-scroll-top.stem-expand-open {
+  position: absolute;
+  z-index: 15;
+  box-sizing: border-box;
+  max-height: calc(100% - 16px);
+  --stem-glass-bg: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.76) 0%,
+    rgba(255, 254, 251, 0.62) 100%
+  );
+  --stem-glass-blur: blur(24px) saturate(1.65);
+  --stem-glass-edge: rgba(255, 255, 255, 0.68);
+  background: var(--stem-glass-bg);
+  -webkit-backdrop-filter: var(--stem-glass-blur);
+  backdrop-filter: var(--stem-glass-blur);
+  box-shadow:
+    inset 0 0 0 1px var(--stem-glass-edge),
+    0 14px 36px rgba(15, 23, 42, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.18);
+  padding-bottom: 0.35em;
+}
+
+.course-container[data-layout="text-only"] .stem-expand-spacer,
+.course-container[data-layout="top-split"] .stem-expand-spacer,
+.course-container[data-layout="left-right"] .stem-expand-spacer {
+  flex: 0 0 auto;
+  visibility: hidden;
+  pointer-events: none;
+}

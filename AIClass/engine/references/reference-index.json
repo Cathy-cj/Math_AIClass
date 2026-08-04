@@ -1,0 +1,37 @@
+{
+  "referenceOnly": true,
+  "sentinel": "REFERENCE_ONLY_DO_NOT_COPY",
+  "schemaVersion": "1.0",
+  "purpose": "Planning-only archetype references excluded from runtime packages.",
+  "runtimePolicy": {
+    "includeInPackage": false,
+    "codegenReadable": false,
+    "allowedConsumer": "skills/archetype-plan-selector"
+  },
+  "recipes": [
+    {
+      "archetype": "direct-formula",
+      "path": "recipes/direct-formula",
+      "selectWhen": ["single governing relation", "direct substitution or one transformation"],
+      "avoidWhen": ["independent subquestions", "periodic state evolution"]
+    },
+    {
+      "archetype": "composite-split",
+      "path": "recipes/composite-split",
+      "selectWhen": ["whole decomposes into meaningful parts", "partial results must be recombined"],
+      "avoidWhen": ["one direct relation is sufficient"]
+    },
+    {
+      "archetype": "pattern-cycle",
+      "path": "recipes/pattern-cycle",
+      "selectWhen": ["state repeats after a fixed cycle", "large index reduces by remainder"],
+      "avoidWhen": ["sequence has no verified repetition"]
+    },
+    {
+      "archetype": "multi-question",
+      "path": "recipes/multi-question",
+      "selectWhen": ["two or more explicit asks", "later asks may depend on earlier results"],
+      "avoidWhen": ["only one mathematical target"]
+    }
+  ]
+}

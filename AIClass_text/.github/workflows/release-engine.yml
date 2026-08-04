@@ -1,0 +1,42 @@
+name: Release engine
+
+on:
+  push:
+    tags:
+      - engine-v*
+
+permissions:
+  contents: write
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: engine
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: engine/package-lock.json
+      - run: npm ci
+      - run: npm run vendor:sync
+      - run: npm test
+      - name: Verify version matches tag
+        run: |
+          expected="${GITHUB_REF_NAME#engine-v}"
+          actual="$(node -p "require('./engine.version.json').version")"
+          test "$expected" = "$actual"
+      - name: Create GitHub Release
+        working-directory: .
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" --generate-notes --verify-tag

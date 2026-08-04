@@ -1,0 +1,43 @@
+{
+  "$schema": "../engine/schemas/course.schema.json",
+  "schemaVersion": 1,
+  "courseId": "fixture-minimal",
+  "title": "合成测试课程",
+  "version": "0.1.0",
+  "engine": {
+    "range": "^1.0.0",
+    "requiredCapabilities": [
+      "file-runtime",
+      "post-message",
+      "top-split",
+      "latex",
+      "choice",
+      "replace-key"
+    ]
+  },
+  "authoring": {
+    "rootKey": "authoringSource",
+    "problems": [
+      {
+        "problemId": "problem-a",
+        "order": 1,
+        "actionPrefix": "测试",
+        "planPath": "authoring/problem-a/plan.json"
+      },
+      {
+        "problemId": "problem-b",
+        "order": 2,
+        "actionPrefix": "测试练",
+        "planPath": "authoring/problem-b/plan.json"
+      },
+      {
+        "problemId": "problem-c",
+        "order": 3,
+        "actionPrefix": "测试作业",
+        "planPath": "authoring/problem-c/plan.json"
+      }
+    ]
+  },
+  "authoredModules": [],
+  "extensions": []
+}

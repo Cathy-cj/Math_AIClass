@@ -1,0 +1,182 @@
+/* 概念插播 — 底部抽屉；几何由 overlay-mount.js 按 stage 视口同步 */
+.concept-sheet-root {
+  position: fixed;
+  z-index: 20;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  box-sizing: border-box;
+}
+
+.concept-sheet-root.is-active {
+  pointer-events: auto;
+}
+
+.concept-sheet-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.28);
+  opacity: 0;
+  transition: opacity 0.28s ease;
+}
+
+.concept-sheet-root.is-visible .concept-sheet-backdrop {
+  opacity: 1;
+}
+
+.concept-sheet-panel {
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+  max-height: 42vh;
+  min-height: 200px;
+  margin: 0 12px 12px;
+  padding: 16px 18px 18px;
+  border-radius: 14px 14px 12px 12px;
+  background: #fff;
+  box-shadow: 0 -8px 32px rgba(15, 23, 42, 0.14), 0 2px 8px rgba(15, 23, 42, 0.06);
+  display: flex;
+  gap: 16px;
+  align-items: stretch;
+  transform: translate3d(0, 100%, 0);
+  transition: transform 0.36s cubic-bezier(0.22, 1, 0.36, 1);
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.concept-sheet-root.is-visible .concept-sheet-panel {
+  transform: translate3d(0, 0, 0);
+}
+
+.concept-sheet-root.is-hiding .concept-sheet-panel {
+  transform: translate3d(0, 100%, 0);
+}
+
+.concept-sheet-figure {
+  flex: 0 0 200px;
+  width: 200px;
+  min-height: 160px;
+  border-radius: 10px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.concept-sheet-figure-slot {
+  width: 100%;
+  height: 100%;
+  min-height: 160px;
+}
+
+.concept-sheet-figure-slot .cc-figure-stage,
+.concept-sheet-figure-slot svg {
+  width: 100%;
+  height: 100%;
+}
+
+.concept-sheet-body {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: var(--cs-body-size, 22px);
+  line-height: var(--cs-line-height, 1.5);
+  color: #0f172a;
+}
+
+.concept-sheet-badge {
+  display: inline-flex;
+  align-self: flex-start;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: none;
+  color: #1d4ed8;
+  background: #eff6ff;
+  border-radius: 6px;
+  padding: 3px 8px;
+}
+
+.concept-sheet-title {
+  font-size: 1.05em;
+  font-weight: 700;
+  color: #1e3a8a;
+  line-height: 1.35;
+}
+
+.concept-sheet-lines {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.concept-sheet-lines li {
+  margin: 0 0 6px;
+}
+
+.concept-sheet-lines li:last-child {
+  margin-bottom: 0;
+}
+
+.concept-sheet-lines li.concept-sheet-formula-line {
+  margin-top: 4px;
+  font-weight: 800;
+  color: #1e40af;
+  font-size: 1.05em;
+  line-height: 1.45;
+}
+
+.concept-sheet-figure-slot .ckn-formula {
+  font-weight: 800;
+}
+
+.cs-frac {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  margin: 0 0.12em;
+  line-height: 1.1;
+}
+
+.cs-frac-num,
+.cs-frac-den {
+  font-size: 0.82em;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.cs-frac-bar {
+  display: block;
+  width: 100%;
+  min-width: 2.8em;
+  height: 2px;
+  margin: 2px 0;
+  background: currentColor;
+  border-radius: 1px;
+}
+
+/* 概念插播通用动画 */
+.ckn-stage {
+  width: 100%;
+  height: 100%;
+  min-height: 160px;
+}
+
+.ckn-center-pulse {
+  animation: ckn-center-pulse 1.6s ease-out infinite;
+  transform-origin: center;
+  transform-box: fill-box;
+}
+
+@keyframes ckn-center-pulse {
+  0% { transform: scale(1); opacity: 0.85; }
+  70% { transform: scale(2.8); opacity: 0; }
+  100% { transform: scale(2.8); opacity: 0; }
+}

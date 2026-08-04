@@ -1,0 +1,12 @@
+{
+  "referenceOnly": true,
+  "sentinel": "REFERENCE_ONLY_DO_NOT_COPY",
+  "archetype": "multi-question",
+  "required": {
+    "outlineStages": ["inventory", "dependencies", "shared-setup", "answer-branches", "cross-check"],
+    "planFields": ["objective", "questions", "sharedSetup", "steps", "presentation"],
+    "questionFields": ["id", "ask", "dependsOn"],
+    "stepFields": ["id", "action", "reasoning", "output"]
+  },
+  "constraints": {"minimumQuestions": 2, "dependencyOrderRequired": true, "eachQuestionMustHaveOutput": true, "mustCheckCompleteness": true}
+}

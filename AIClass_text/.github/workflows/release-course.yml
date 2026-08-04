@@ -1,0 +1,48 @@
+name: Release course source
+
+on:
+  push:
+    tags:
+      - course-*-v*
+
+permissions:
+  contents: write
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: engine
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: engine/package-lock.json
+      - run: npm ci
+      - run: npm run vendor:sync
+      - name: Resolve course id
+        id: course
+        run: |
+          rest="${GITHUB_REF_NAME#course-}"
+          course_id="${rest%-v*}"
+          test -f "../courses/${course_id}/course.json"
+          echo "id=${course_id}" >> "$GITHUB_OUTPUT"
+      - run: npm test
+      - name: Export immutable source package
+        run: npm run course:export -- "${{ steps.course.outputs.id }}" --zip
+      - name: Create GitHub Release
+        working-directory: .
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          artifact="$(ls engine/artifacts/${{ steps.course.outputs.id }}-*-source.zip)"
+          gh release create "$GITHUB_REF_NAME" "$artifact" --generate-notes --verify-tag

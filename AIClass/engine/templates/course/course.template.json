@@ -1,0 +1,22 @@
+{
+  "$schema": "../engine/schemas/course.schema.json",
+  "schemaVersion": 1,
+  "courseId": "__COURSE_ID__",
+  "title": "__COURSE_TITLE__",
+  "version": "0.1.0",
+  "engine": {
+    "range": "^1.0.0",
+    "requiredCapabilities": [
+      "file-runtime",
+      "post-message",
+      "left-right",
+      "latex"
+    ]
+  },
+  "authoring": {
+    "rootKey": "authoringSource",
+    "problems": []
+  },
+  "authoredModules": [],
+  "extensions": []
+}

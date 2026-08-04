@@ -1,0 +1,151 @@
+﻿/* 课前 overlay 共享令牌 — 标题屏 */
+
+:root {
+  --lf-overlay-ink: #172033;
+  --lf-overlay-muted: #64748b;
+  --lf-overlay-blue: #2c74f3;
+  --lf-overlay-blue-deep: #1a3d7a;
+  --lf-overlay-blue-soft: #eaf2ff;
+  --lf-overlay-paper: rgba(255, 254, 251, 0.97);
+}
+
+/* 课标题屏 — 方格纸上的坐标框标题卡 */
+
+.lf-lesson-title-screen {
+  --lts-ink: #1a2744;
+  --lts-accent: #2c74f3;
+  --lts-muted: #64748b;
+  --lts-wash: rgba(232, 239, 250, 0.55);
+  --lts-paper: rgba(255, 252, 245, 0.96);
+
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(24px, 6vw, 64px) clamp(20px, 4vw, 48px);
+  pointer-events: none;
+  box-sizing: border-box;
+}
+
+.lf-lts-frame {
+  position: relative;
+  width: min(720px, 100%);
+  padding: clamp(36px, 5vw, 52px) clamp(40px, 6vw, 64px) clamp(32px, 4vw, 44px);
+  background:
+    linear-gradient(165deg, var(--lts-paper) 0%, var(--lts-wash) 100%);
+  border: 1px solid rgba(44, 116, 243, 0.14);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.85) inset,
+    0 20px 40px rgba(26, 39, 68, 0.07);
+}
+
+.lf-lts-corner {
+  position: absolute;
+  width: 32px;
+  height: 32px;
+  border-color: var(--lts-accent);
+  opacity: 0.55;
+}
+
+.lf-lts-corner--tl { top: 12px; left: 12px; border-top: 2px solid; border-left: 2px solid; }
+.lf-lts-corner--tr { top: 12px; right: 12px; border-top: 2px solid; border-right: 2px solid; }
+.lf-lts-corner--bl { bottom: 12px; left: 12px; border-bottom: 2px solid; border-left: 2px solid; }
+.lf-lts-corner--br { bottom: 12px; right: 12px; border-bottom: 2px solid; border-right: 2px solid; }
+
+.lf-lts-content {
+  text-align: center;
+}
+
+.lf-lts-eyebrow {
+  margin: 0 0 12px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--lts-accent);
+}
+
+.lf-lts-title {
+  margin: 0;
+  font-family: "Noto Serif SC", "Source Han Serif SC", "Songti SC", "SimSun", serif;
+  font-size: clamp(32px, 4.8vw, 48px);
+  font-weight: 700;
+  line-height: 1.22;
+  letter-spacing: 0.03em;
+  color: var(--lts-ink);
+}
+
+.lf-lts-subtitle {
+  margin: 14px 0 0;
+  font-size: clamp(16px, 2.2vw, 20px);
+  line-height: 1.55;
+  color: var(--lts-muted);
+  font-weight: 400;
+}
+
+/* 入场 / 退场 */
+
+.lf-lesson-title-screen {
+  opacity: 0;
+  transition: opacity 0.45s ease;
+}
+
+.lf-lesson-title-screen.is-visible {
+  opacity: 1;
+}
+
+.lf-lesson-title-screen.is-hiding {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.lf-lts-frame {
+  transform: translateY(16px) scale(0.98);
+  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.lf-lesson-title-screen.is-visible .lf-lts-frame {
+  transform: translateY(0) scale(1);
+}
+
+.lf-lesson-title-screen.is-hiding .lf-lts-frame {
+  transform: translateY(-8px) scale(0.98);
+  transition-duration: 0.4s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lf-lesson-title-screen,
+  .lf-lts-frame {
+    transition: none;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .lf-lts-eyebrow,
+  .lf-lts-title,
+  .lf-lts-subtitle {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  .lf-lesson-title-screen.is-visible .lf-lts-eyebrow {
+    animation: lf-lts-rise 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.08s forwards;
+  }
+
+  .lf-lesson-title-screen.is-visible .lf-lts-title {
+    animation: lf-lts-rise 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.18s forwards;
+  }
+
+  .lf-lesson-title-screen.is-visible .lf-lts-subtitle {
+    animation: lf-lts-rise 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.3s forwards;
+  }
+}
+
+@keyframes lf-lts-rise {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

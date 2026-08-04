@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "id": "problem-b",
+  "title": "合成练习 B",
+  "source": "（合成练习来源）",
+  "moduleType": "practice",
+  "difficulty": 2,
+  "layout": "text-only",
+  "guidanceLayout": "interleaved",
+  "guidanceChain": [
+    {
+      "title": "审题环节"
+    }
+  ],
+  "steps": [
+    {
+      "id": "start",
+      "action": "测试练_开始",
+      "phase": "开场",
+      "group": 0,
+      "agent": {
+        "type": "explain",
+        "description": "显示合成练习。"
+      },
+      "push": [
+        {
+          "type": "text",
+          "region": "top",
+          "lines": ["合成练习 B"]
+        }
+      ]
+    },
+    {
+      "id": "step-01",
+      "action": "测试练_步骤01",
+      "phase": "审题环节",
+      "group": 1,
+      "agent": {
+        "type": "explain",
+        "description": "完成合成练习。"
+      },
+      "push": [
+        {
+          "type": "section",
+          "tag": "已知",
+          "tagTone": "known",
+          "lead": "合成条件 B"
+        },
+        {
+          "type": "section",
+          "tag": "求",
+          "tagTone": "ask",
+          "lead": "验证练习模块"
+        },
+        {
+          "type": "choice",
+          "question": "是否完成",
+          "options": ["是", "否"],
+          "answer": "是"
+        }
+      ]
+    }
+  ]
+}

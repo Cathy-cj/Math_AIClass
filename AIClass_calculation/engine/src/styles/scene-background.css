@@ -1,0 +1,7 @@
+/* 课程场景背景 — 由 body[data-lesson-scene] 切换令牌，作用于全页与 .lf-viewport-bg */
+
+body[data-lesson-scene="topic-warm"] {
+  --lf-paper: #f8f4ec;
+  --lf-grid-line: rgba(139, 103, 61, 0.08);
+  --lf-grid-line-bold: rgba(139, 103, 61, 0.12);
+}

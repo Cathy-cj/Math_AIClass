@@ -1,0 +1,11 @@
+{
+  "referenceOnly": true,
+  "sentinel": "REFERENCE_ONLY_DO_NOT_COPY",
+  "archetype": "direct-formula",
+  "required": {
+    "outlineStages": ["identify", "select", "solve", "check"],
+    "planFields": ["objective", "givens", "target", "steps", "presentation"],
+    "stepFields": ["id", "action", "reasoning", "output"]
+  },
+  "constraints": {"minimumSteps": 3, "maximumSteps": 6, "mustStateApplicability": true, "mustValidate": true}
+}

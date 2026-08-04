@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "id": "problem-b",
+  "title": "合成练习 B",
+  "source": "（合成练习来源）",
+  "moduleType": "practice",
+  "difficulty": 2,
+  "layout": "left-right",
+  "figureTemplate": "synthetic-board",
+  "problemBrief": {
+    "known": ["合成条件 B"],
+    "ask": "验证练习模块"
+  },
+  "guidanceChain": [
+    {
+      "title": "审题环节",
+      "desc": "验证练习编号"
+    }
+  ],
+  "steps": [
+    {
+      "id": "start",
+      "action": "测试练_开始",
+      "phase": "开场",
+      "group": 0,
+      "agent": {
+        "type": "explain",
+        "description": "显示合成练习。"
+      },
+      "figure": {
+        "state": "default"
+      },
+      "push": [
+        {
+          "type": "text",
+          "region": "top",
+          "lines": ["合成练习 B"]
+        }
+      ]
+    },
+    {
+      "id": "step-01",
+      "action": "测试练_步骤01",
+      "phase": "审题环节",
+      "group": 1,
+      "problemBrief": {
+        "known": 1,
+        "ask": true
+      },
+      "agent": {
+        "type": "explain",
+        "description": "完成合成练习。"
+      }
+    }
+  ]
+}

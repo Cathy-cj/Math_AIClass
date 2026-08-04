@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>__COURSE_TITLE__</title>
+  <link rel="stylesheet" href="src/styles/engine.css">
+  <link rel="stylesheet" href="lesson/styles/lesson.css">
+</head>
+<body>
+  <script type="application/json" id="lesson-action-catalog">__ACTION_CATALOG_JSON__</script>
+  <script>
+    window.LESSON_ACTION_CATALOG = JSON.parse(
+      document.getElementById('lesson-action-catalog').textContent || '[]'
+    )
+    window.AICLASS_RUNTIME_CONFIG = __RUNTIME_CONFIG_JSON__
+    window.__COURSE_BOOT = { srcRoot: 'src', lessonRoot: 'lesson' }
+  </script>
+  <script src="src/boot/engine-manifest.js"></script>
+  <script src="src/boot/loader.js"></script>
+</body>
+</html>

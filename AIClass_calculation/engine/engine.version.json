@@ -1,0 +1,16 @@
+{
+  "version": "1.0.0",
+  "schemaVersion": 1,
+  "capabilities": [
+    "file-runtime",
+    "post-message",
+    "text-only",
+    "top-split",
+    "choice",
+    "fill",
+    "oral",
+    "latex",
+    "replace-key",
+    "course-extension"
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "referenceOnly": true,
+  "sentinel": "REFERENCE_ONLY_DO_NOT_COPY",
+  "archetype": "pattern-cycle",
+  "required": {
+    "outlineStages": ["observe", "prove-cycle", "reduce", "resolve", "check"],
+    "planFields": ["objective", "indexOrigin", "cycle", "steps", "presentation"],
+    "stepFields": ["id", "action", "reasoning", "output"]
+  },
+  "constraints": {"cycleMustBeProven": true, "indexOriginRequired": true, "zeroRemainderCaseRequired": true, "minimumObservedCycles": 2}
+}

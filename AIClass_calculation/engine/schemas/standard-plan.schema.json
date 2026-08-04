@@ -1,0 +1,158 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aiclass.local/schemas/standard-plan.schema.json",
+  "title": "AIClass standard plan",
+  "type": "object",
+  "additionalProperties": true,
+  "allOf": [
+    { "not": { "required": ["figureTemplate"] } },
+    { "not": { "required": ["problemBrief"] } },
+    { "not": { "required": ["guidanceChain"] } },
+    { "not": { "required": ["guidanceLayout"] } }
+  ],
+  "required": ["schemaVersion", "id", "title", "layout", "steps"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]{1,47}$" },
+    "title": { "type": "string", "minLength": 1 },
+    "source": { "type": "string" },
+    "moduleType": { "enum": ["knowledge", "example", "practice", "homework"] },
+    "difficulty": { "type": "integer", "minimum": 1, "maximum": 6 },
+    "layout": { "const": "top-split" },
+    "quickQALayout": { "enum": ["above-body"] },
+    "lessonContext": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "slot": { "enum": ["unitIntro", "firstExample", "afterExample", "homework", "standalone"] },
+        "afterPlanId": { "type": ["string", "null"] },
+        "archetype": { "type": "string" }
+      }
+    },
+    "layoutParams": {
+      "type": "object",
+      "additionalProperties": { "type": ["string", "number", "boolean"] }
+    },
+    "style": {
+      "type": "object",
+      "additionalProperties": { "type": ["string", "number", "boolean"] }
+    },
+    "steps": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "allOf": [
+          { "not": { "required": ["figure"] } },
+          { "not": { "required": ["problemBrief"] } },
+          { "not": { "required": ["guidanceDesc"] } },
+          { "not": { "required": ["group"] } },
+          { "not": { "required": ["guidanceSub"] } }
+        ],
+        "required": ["id", "action", "agent"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "action": { "type": "string", "minLength": 1 },
+          "phase": { "type": "string" },
+          "retainPush": {
+            "oneOf": [
+              { "type": "boolean" },
+              {
+                "type": "array",
+                "items": { "type": "string", "minLength": 1 }
+              }
+            ]
+          },
+          "scroll": { "type": "object" },
+          "stemClass": {
+            "oneOf": [
+              { "type": "string" },
+              {
+                "type": "object",
+                "required": ["selector"],
+                "additionalProperties": true,
+                "properties": {
+                  "selector": { "type": "string", "minLength": 1 },
+                  "add": { "type": "string" },
+                  "remove": { "type": "string" }
+                }
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["selector"],
+                  "additionalProperties": true,
+                  "properties": {
+                    "selector": { "type": "string", "minLength": 1 },
+                    "add": { "type": "string" },
+                    "remove": { "type": "string" }
+                  }
+                }
+              }
+            ]
+          },
+          "agent": {
+            "type": "object",
+            "required": ["type", "description"],
+            "properties": {
+              "type": { "type": "string" },
+              "description": { "type": "string" }
+            }
+          },
+          "push": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true,
+              "required": ["type"],
+              "properties": {
+                "type": { "type": "string" },
+                "region": { "enum": ["top", "left", "right", "main"] },
+                "replaceKey": { "type": "string" },
+                "class": { "type": "string" },
+                "tag": { "type": "string" },
+                "tagTone": { "type": "string" },
+                "lead": { "type": "string" },
+                "leadHtml": { "type": "boolean" },
+                "hangAfterTag": { "type": ["boolean", "string"] },
+                "lines": {
+                  "type": "array",
+                  "items": {
+                    "oneOf": [
+                      { "type": "string" },
+                      {
+                        "type": "object",
+                        "additionalProperties": true,
+                        "properties": {
+                          "text": { "type": "string" },
+                          "html": { "type": "boolean" },
+                          "role": { "type": "string" }
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "quickQA": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["id", "question", "answer"],
+        "properties": {
+          "id": { "type": "string" },
+          "question": { "type": "string" },
+          "answer": { "type": "string", "minLength": 1 },
+          "fillBlank": { "type": "boolean" }
+        }
+      }
+    }
+  }
+}

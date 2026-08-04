@@ -1,0 +1,89 @@
+/* 手指引导提示样式 */
+
+.aic-hand-hint {
+  --aic-hand-hint-size: 42px;
+  --aic-hand-hint-fill: #ffdca8;
+  --aic-hand-hint-stroke: #17345f;
+  position: absolute;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--aic-hand-hint-fill);
+  pointer-events: none;
+  filter: drop-shadow(0 8px 12px rgba(15, 23, 42, 0.22));
+}
+
+.aic-hand-hint[data-placement="bottom-right"] {
+  right: 12%;
+  bottom: 10%;
+}
+
+.aic-hand-hint[data-placement="center-right"] {
+  right: 10%;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.aic-hand-hint[data-placement="top-right"] {
+  top: 14%;
+  right: 12%;
+}
+
+.aic-hand-hint-icon {
+  display: block;
+  width: var(--aic-hand-hint-size);
+  height: var(--aic-hand-hint-size);
+  fill: currentColor;
+  stroke: var(--aic-hand-hint-stroke);
+  stroke-width: 26;
+  paint-order: stroke fill;
+}
+
+.aic-hand-hint-text {
+  border-radius: 999px;
+  padding: 3px 8px;
+  background: rgba(255, 255, 255, 0.9);
+  color: #17345f;
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.aic-hand-hint[data-animate="true"] .aic-hand-hint-icon {
+  animation: aic-hand-hint-tap 1.1s ease-in-out infinite;
+  transform-origin: 65% 75%;
+}
+
+.aic-hand-hint[data-animate="true"][data-motion="scroll-y"] .aic-hand-hint-icon {
+  animation: aic-hand-hint-scroll-y 1.25s ease-in-out infinite;
+}
+
+@keyframes aic-hand-hint-tap {
+  0%,
+  100% {
+    transform: translate(0, 0) rotate(-8deg) scale(1);
+  }
+  45% {
+    transform: translate(-5px, -5px) rotate(-14deg) scale(1.04);
+  }
+  70% {
+    transform: translate(1px, 1px) rotate(-5deg) scale(0.96);
+  }
+}
+
+@keyframes aic-hand-hint-scroll-y {
+  0%,
+  100% {
+    transform: translateY(12px) rotate(-8deg) scale(0.98);
+    opacity: 0.78;
+  }
+  42% {
+    transform: translateY(-12px) rotate(-8deg) scale(1.04);
+    opacity: 1;
+  }
+  72% {
+    transform: translateY(-2px) rotate(-8deg) scale(1);
+    opacity: 0.92;
+  }
+}

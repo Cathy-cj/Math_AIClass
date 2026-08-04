@@ -1,0 +1,17 @@
+{
+  "referenceOnly": true,
+  "sentinel": "REFERENCE_ONLY_DO_NOT_COPY",
+  "archetype": "direct-formula",
+  "plan": {
+    "objective": "<fresh objective from current problem>",
+    "givens": ["<known-A>", "<known-B>"],
+    "target": "<unknown>",
+    "steps": [
+      {"id": "s1", "action": "extract", "reasoning": "Bind each given to a symbol and unit.", "output": "<symbol map>"},
+      {"id": "s2", "action": "model", "reasoning": "State the relation and its conditions.", "output": "<relation>"},
+      {"id": "s3", "action": "compute", "reasoning": "Transform once, then substitute.", "output": "<derived result>"},
+      {"id": "s4", "action": "validate", "reasoning": "Verify dimension and boundary behavior.", "output": "<checked conclusion>"}
+    ],
+    "presentation": {"visuals": ["symbol map", "single derivation chain"], "narration": "generate original wording"}
+  }
+}

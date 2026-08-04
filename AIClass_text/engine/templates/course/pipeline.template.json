@@ -1,0 +1,7 @@
+{
+  "$schema": "../engine/schemas/pipeline.schema.json",
+  "schemaVersion": 1,
+  "courseId": "__COURSE_ID__",
+  "activeProblemId": null,
+  "problems": []
+}

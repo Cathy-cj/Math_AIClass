@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "id": "problem-c",
+  "title": "合成作业 C",
+  "source": "（合成作业来源）",
+  "moduleType": "homework",
+  "difficulty": 2,
+  "layout": "top-split",
+  "steps": [
+    {
+      "id": "start",
+      "action": "测试作业_开始",
+      "phase": "开场",
+      "agent": {
+        "type": "explain",
+        "description": "显示合成作业。"
+      },
+      "push": [
+        {
+          "type": "text",
+          "region": "top",
+          "class": "calc-stem",
+          "lines": ["合成作业 C"]
+        }
+      ]
+    },
+    {
+      "id": "step-01",
+      "action": "测试作业_步骤01",
+      "phase": "详解",
+      "agent": {
+        "type": "explain",
+        "description": "完成合成作业。"
+      },
+      "push": [
+        {
+          "type": "text",
+          "region": "left",
+          "class": "calc-solve-note",
+          "lines": ["合成条件 C；验证作业模块"]
+        }
+      ]
+    }
+  ]
+}

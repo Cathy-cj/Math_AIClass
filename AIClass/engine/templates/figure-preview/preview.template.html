@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>{{PAGE_TITLE}}</title>
+  <link rel="stylesheet" href="../../../engine/vendor/jsxgraph/jsxgraph.css" />
+  <link rel="stylesheet" href="../../../engine/templates/figure-preview/preview.css" />
+</head>
+<body>
+  <div class="card">
+    <h1 id="preview-title">{{PREVIEW_TITLE}}</h1>
+    <p class="meta" id="preview-meta">{{PREVIEW_SUBTITLE}}</p>
+    <div class="figure-wrap">
+      <div class="figure-canvas">
+        <div id="box"></div>
+      </div>
+      <div class="figure-info" id="figure-info-panel"></div>
+    </div>
+    <div id="err"></div>
+  </div>
+  <script type="application/json" id="figure-spec-data">{{SPEC_JSON}}</script>
+  <script src="../../../engine/vendor/jsxgraph/jsxgraphcore.js"></script>
+  <script src="../../../engine/src/figures/jxg-kit-2d.js"></script>
+  <script src="../../../engine/templates/figure-preview/preview-pattern.js"></script>
+  <script src="../../../engine/templates/figure-preview/preview-draw.js"></script>
+  <script>
+    AIClassFigurePreview.boot(JSON.parse(document.getElementById('figure-spec-data').textContent));
+  </script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+{
+  "referenceOnly": true,
+  "sentinel": "REFERENCE_ONLY_DO_NOT_COPY",
+  "archetype": "composite-split",
+  "required": {
+    "outlineStages": ["define-whole", "split", "solve-parts", "combine", "check"],
+    "planFields": ["objective", "partitionRule", "parts", "steps", "presentation"],
+    "stepFields": ["id", "action", "reasoning", "output"]
+  },
+  "constraints": {"minimumParts": 2, "partitionMustBeComplete": true, "partitionMustBeDisjoint": true, "mustValidateRecombination": true}
+}

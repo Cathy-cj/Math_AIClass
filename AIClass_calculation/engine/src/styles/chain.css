@@ -1,0 +1,32 @@
+/* chain widget — 作用域 .course-container */
+
+.course-container .lf-chain {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px 9px;
+  max-width: 100%;
+  margin: calc(var(--cc-body-size, 24px) * 0.2) 0;
+}
+
+.course-container .lf-chain-node {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 8px;
+  border: 1px solid rgba(15, 23, 42, 0.14);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+  line-height: 1.36;
+  font-size: var(--cc-body-size, var(--lf-body-size, 28px));
+}
+
+.course-container .lf-chain-node.is-highlight {
+  border-color: transparent;
+  background: var(--lf-highlight, rgba(255, 214, 76, 0.34));
+  font-weight: 800;
+}
+
+.course-container .lf-chain-arrow {
+  color: var(--lf-muted, #64748b);
+  font-size: calc(var(--cc-body-size, 28px) * 0.92);
+}

@@ -1,0 +1,15 @@
+{
+  "referenceOnly": true,
+  "sentinel": "REFERENCE_ONLY_DO_NOT_COPY",
+  "archetype": "pattern-cycle",
+  "outline": {
+    "goal": "Verify a repeating state cycle and reduce a distant position to one cycle.",
+    "stages": [
+      {"id": "observe", "intent": "List enough consecutive states to propose a pattern."},
+      {"id": "prove-cycle", "intent": "Establish the cycle boundary and length."},
+      {"id": "reduce", "intent": "Map the target index by quotient and remainder."},
+      {"id": "resolve", "intent": "Read the corresponding state from one cycle."},
+      {"id": "check", "intent": "Handle indexing origin and zero remainder."}
+    ]
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "referenceOnly": true,
+  "sentinel": "REFERENCE_ONLY_DO_NOT_COPY",
+  "archetype": "multi-question",
+  "plan": {
+    "objective": "<fresh objective from current problem>",
+    "questions": [
+      {"id": "q1", "ask": "<first ask>", "dependsOn": []},
+      {"id": "q2", "ask": "<second ask>", "dependsOn": ["q1"]}
+    ],
+    "sharedSetup": ["<definition or model used by multiple asks>"],
+    "steps": [
+      {"id": "s1", "action": "inventory", "reasoning": "Separate outputs and identify dependencies.", "output": "<question map>"},
+      {"id": "s2", "action": "prepare", "reasoning": "Establish shared notation and givens once.", "output": "<shared setup>"},
+      {"id": "s3", "action": "answer-q1", "reasoning": "Resolve the prerequisite ask.", "output": "<q1 result>"},
+      {"id": "s4", "action": "answer-q2", "reasoning": "Use only declared prerequisites.", "output": "<q2 result>"},
+      {"id": "s5", "action": "validate", "reasoning": "Check every ask is answered and mutually consistent.", "output": "<checked answer set>"}
+    ],
+    "presentation": {"visuals": ["question dependency map", "separate answer panels"], "narration": "generate original wording"}
+  }
+}

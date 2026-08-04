@@ -1,0 +1,52 @@
+/* fill widget — 作用域 .course-container */
+
+.course-container .lf-block-fill .lf-fill {
+  width: 100%;
+  margin: calc(var(--cc-body-size, 24px) * 0.35) 0;
+}
+
+.course-container .lf-fill-line {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+}
+
+.course-container .lf-block-fill .lf-fill-line {
+  gap: 6px 12px;
+}
+
+.course-container .lf-fill-input {
+  width: 64px;
+  min-width: 42px;
+  height: 36px;
+  border: none;
+  border-bottom: 2px solid rgba(15, 23, 42, 0.38);
+  background: transparent;
+  color: var(--cc-ink, var(--lf-ink));
+  font: inherit;
+  text-align: center;
+  outline: none;
+}
+
+.course-container .lf-fill-input:disabled,
+.course-container .lf-fill-input[readonly]:disabled {
+  color: var(--cc-ink, var(--lf-ink));
+  opacity: 1;
+  background: rgba(255, 214, 76, 0.34);
+  border-bottom-color: transparent;
+}
+
+.course-container .lf-fill-input[readonly]:not(:disabled) {
+  background: transparent;
+  border-bottom-color: rgba(15, 23, 42, 0.38);
+}
+
+.course-container .lf-fill-input--revealed {
+  font-weight: 700;
+}
+
+.course-container .lf-fill-input.is-active:not(:disabled) {
+  background: rgba(0, 145, 255, 0.1);
+  border-bottom-color: rgba(0, 145, 255, 0.72);
+}

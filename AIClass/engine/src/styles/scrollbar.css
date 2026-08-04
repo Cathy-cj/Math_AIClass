@@ -1,0 +1,35 @@
+/* 细线滚动条 + 自动隐藏 — 全局 4px 细线；滚动时显示（.is-scrolling），1s 无滚动淡出 */
+
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 999px;
+  transition: background-color 0.4s ease;
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* 滚动中显示（由 scrollbar-auto-hide.js 控制） */
+.is-scrolling::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.5);
+}
+
+/* Firefox：细线 + 默认透明（自动隐藏），滚动中（.is-scrolling）显示 */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+
+.is-scrolling {
+  scrollbar-color: rgba(100, 116, 139, 0.5) transparent;
+}

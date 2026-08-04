@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "id": "problem-b",
+  "title": "合成练习 B",
+  "source": "（合成练习来源）",
+  "moduleType": "practice",
+  "difficulty": 2,
+  "layout": "top-split",
+  "steps": [
+    {
+      "id": "start",
+      "action": "测试练_开始",
+      "phase": "开场",
+      "agent": {
+        "type": "explain",
+        "description": "显示合成练习。"
+      },
+      "push": [
+        {
+          "type": "text",
+          "region": "top",
+          "class": "calc-stem",
+          "lines": ["合成练习 B"]
+        }
+      ]
+    },
+    {
+      "id": "step-01",
+      "action": "测试练_步骤01",
+      "phase": "分析",
+      "userResponse": true,
+      "agent": {
+        "type": "ask",
+        "description": "完成合成练习。"
+      },
+      "push": [
+        {
+          "type": "section",
+          "region": "left",
+          "class": "calc-label calc-label--key",
+          "tag": "【分析】",
+          "title": "合成分析 B"
+        },
+        {
+          "type": "choice",
+          "region": "left",
+          "question": "是否完成",
+          "options": ["是", "否"],
+          "answer": "是"
+        }
+      ]
+    }
+  ]
+}

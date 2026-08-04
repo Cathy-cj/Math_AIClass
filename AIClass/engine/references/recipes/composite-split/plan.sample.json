@@ -1,0 +1,18 @@
+{
+  "referenceOnly": true,
+  "sentinel": "REFERENCE_ONLY_DO_NOT_COPY",
+  "archetype": "composite-split",
+  "plan": {
+    "objective": "<fresh objective from current problem>",
+    "partitionRule": "<why these parts are complete and disjoint>",
+    "parts": ["<part-A>", "<part-B>"],
+    "steps": [
+      {"id": "s1", "action": "frame", "reasoning": "Define the whole and preserved quantities.", "output": "<whole model>"},
+      {"id": "s2", "action": "partition", "reasoning": "Create a complete non-overlapping split.", "output": "<part list>"},
+      {"id": "s3", "action": "resolve", "reasoning": "Compute or infer each part separately.", "output": "<part results>"},
+      {"id": "s4", "action": "recombine", "reasoning": "Use the relation between parts and whole.", "output": "<whole result>"},
+      {"id": "s5", "action": "validate", "reasoning": "Test coverage and double counting.", "output": "<checked conclusion>"}
+    ],
+    "presentation": {"visuals": ["whole-to-parts diagram", "recombination line"], "narration": "generate original wording"}
+  }
+}

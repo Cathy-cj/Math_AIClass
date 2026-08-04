@@ -1,0 +1,372 @@
+/* 纯计算呈现样式（引擎一等公民）
+   提取自 module_template/lesson/styles/lesson.css
+   契约见 skills/lesson-plan/calculation-marks.md */
+
+/* ── 卷面标签【要点】【详解】【答案】 ── */
+.course-container .lf-block.calc-label {
+  margin: 0.85em 0 0.45em;
+}
+
+.course-container .lf-block.calc-label .lf-section-tag {
+  color: #2563eb;
+  font-weight: 700;
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin-right: 0.35em;
+}
+
+.course-container .lf-block.calc-label .lf-section-title {
+  color: #1e293b;
+  font-weight: 650;
+  font-size: 1.02em;
+  background: transparent;
+  padding: 0;
+}
+
+.course-container .lf-block.calc-label--key {
+  padding: 0.55em 0.75em;
+  background: linear-gradient(90deg, rgba(37, 99, 235, 0.08), rgba(37, 99, 235, 0.02));
+  border-left: 3px solid #2563eb;
+  border-radius: 0 8px 8px 0;
+}
+
+.course-container .lf-block.calc-label--answer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  padding: 0.45em 0.75em;
+  background: rgba(22, 163, 74, 0.08);
+  border-left: 3px solid #16a34a;
+  border-radius: 0 8px 8px 0;
+}
+
+.course-container .lf-block.calc-label--answer .lf-section-tag {
+  color: #15803d;
+}
+
+.course-container .lf-block.calc-label--answer .lf-section-title {
+  color: #15803d;
+  font-weight: 750;
+  margin-left: 0.15em;
+  background: transparent;
+}
+
+/* ── 题干（顶栏） ── */
+.course-container .lf-block.calc-stem {
+  margin: 0.1em 0 0.15em;
+  font-weight: 650;
+}
+
+.course-container .lf-block.calc-eq-index {
+  display: contents;
+}
+
+.course-container .lf-block.calc-eq-index .lf-text-line {
+  display: inline-block;
+  width: 2.4em;
+  margin: 0.35em 0.35em 0.2em 0;
+  vertical-align: middle;
+  font-weight: 600;
+  color: #334155;
+}
+
+.course-container .lf-block.calc-eq {
+  display: inline-block;
+  width: calc(100% - 2.85em);
+  margin: 0.35em 0 0.2em;
+  vertical-align: middle;
+}
+
+.course-container .lf-block.calc-eq .lf-latex {
+  font-size: 1.02em;
+}
+
+/* 题干算式：紧贴「计算：」，左对齐，少占顶栏高度 */
+.course-container .lf-block.calc-eq.calc-eq--stem {
+  display: block;
+  width: 100%;
+  margin: 0.1em 0 0.15em;
+  text-align: left;
+}
+
+.course-container .lf-block.calc-eq.calc-eq--stem .lf-latex,
+.course-container .lf-block.calc-eq.calc-eq--stem .katex-display {
+  margin: 0;
+  text-align: left !important;
+}
+
+.course-container .course-scroll-top .lf-block.calc-stem + .lf-block.calc-eq {
+  margin-top: 0.05em;
+}
+
+/* ── 要点列表 ── */
+.course-container .lf-block.calc-key-list {
+  margin: 0.35em 0 0.55em;
+  padding: 0.35em 0.2em 0.35em 0.15em;
+}
+
+.course-container .lf-block.calc-key-list .lf-text-line {
+  margin: 0.28em 0;
+  color: #1e293b;
+}
+
+.course-container .calc-em {
+  color: #c2410c;
+  font-weight: 700;
+}
+
+.course-container .calc-em .katex {
+  color: inherit;
+  font-size: 1.05em;
+}
+
+.course-container .aic-choice-label .katex {
+  font-size: 1.05em;
+}
+
+.course-container .lf-block.calc-key-choice {
+  margin: 0.5em 0 0.75em;
+}
+
+.course-container .lf-block.calc-key-tex {
+  margin: 0.15em 0 0.45em 0.15em;
+  font-size: 0.92em;
+  text-align: left;
+}
+
+.course-container .lf-block.calc-key-tex .lf-latex,
+.course-container .lf-block.calc-key-tex .katex-display {
+  margin: 0;
+  text-align: left !important;
+}
+
+.course-container .course-scroll-right .lf-block.calc-key-tex {
+  font-size: 0.86em;
+}
+
+/* 右栏钉住的要点：略紧凑 */
+.course-container .course-scroll-right .lf-block.calc-key-pin {
+  margin-top: 0.2em;
+}
+
+.course-container .course-scroll-right .lf-block.calc-key-list {
+  font-size: 0.92em;
+}
+
+/* ── 详解：说明在上、算式在下（左对齐，无前置等号） ── */
+.course-container .lf-block.calc-solve-note {
+  margin: 0.55em 0 0.08em;
+}
+
+.course-container .lf-block.calc-solve-note .lf-text-line {
+  margin: 0;
+  font-size: 0.88em;
+  color: #64748b;
+}
+
+.course-container .lf-block.calc-solve-step {
+  margin: 0.05em 0 0.2em;
+  padding: 0.15em 0.45em 0.28em;
+  border-radius: 6px;
+  border-left: 2px solid transparent;
+  font-size: 0.88em; /* 比题干略小 */
+  text-align: left;
+  overflow: visible;
+}
+
+.course-container .lf-block.calc-solve-step .lf-latex,
+.course-container .lf-block.calc-solve-step .lf-latex--display,
+.course-container .lf-block.calc-solve-step .katex-display {
+  margin: 0;
+  text-align: left !important;
+}
+
+.course-container .lf-block.calc-solve-step .katex-display > .katex {
+  text-align: left;
+}
+
+/* ── 公式断行 / 溢出行缩字（calc-line-fit.js） ── */
+.course-container .lf-latex .calc-fit-line {
+  display: block;
+  text-align: left;
+  max-width: 100%;
+  padding-bottom: 0.08em;
+  overflow: visible;
+}
+
+.course-container .lf-latex .calc-fit-line .katex-display {
+  display: inline-block;
+  margin: 0;
+  max-width: 100%;
+  text-align: left;
+}
+
+.course-container .lf-latex .calc-fit-line .katex-display > .katex {
+  display: inline-block;
+  text-align: left;
+}
+
+.course-container .lf-latex .calc-fit-line + .calc-fit-line {
+  margin-top: 0.12em;
+}
+
+.course-container .lf-latex .calc-fit-line .katex-display {
+  margin: 0;
+  text-align: left !important;
+}
+
+.course-container .lf-block.calc-solve-step[data-is-current-step="true"] {
+  background: rgba(245, 158, 11, 0.1);
+  border-left-color: #f59e0b;
+}
+
+.course-container .lf-block.calc-solve-note + .lf-block.calc-answer {
+  margin-top: 0.2em;
+}
+
+/* ── 最终答案：绿色背板标记 ── */
+.course-container .lf-block.calc-answer.calc-answer--final {
+  --calc-ans-ink: #14532d;
+  --calc-ans-mark: #15803d;
+  --calc-ans-fill: rgba(22, 163, 74, 0.16);
+  --calc-ans-edge: rgba(22, 163, 74, 0.38);
+
+  margin: 0.35em 0 0.9em;
+  padding: 0.55em 0.85em;
+  border-radius: 12px;
+  border: 1px solid var(--calc-ans-edge);
+  border-left: 3px solid #16a34a;
+  background:
+    linear-gradient(105deg, rgba(22, 163, 74, 0.2) 0%, rgba(22, 163, 74, 0.08) 42%, rgba(240, 253, 244, 0.55) 100%);
+  box-shadow: 0 6px 18px rgba(22, 163, 74, 0.1);
+  box-sizing: border-box;
+  font-size: 0.95em;
+  text-align: left;
+}
+
+.course-container .lf-block.calc-answer.calc-answer--final .lf-solve-step {
+  margin: 0;
+}
+
+.course-container .lf-block.calc-answer.calc-answer--final .lf-solve-title {
+  color: var(--calc-ans-ink);
+  font-size: 1.08em;
+  font-weight: 750;
+}
+
+/* 覆盖引擎默认橙色闪烁高亮 → 绿色马克笔底 */
+.course-container .lf-block.calc-answer.calc-answer--final .lf-solve-answer-highlight {
+  display: inline-block;
+  margin: 0;
+  padding: 0.12em 0.55em 0.14em;
+  border: none;
+  border-radius: 7px;
+  background: var(--calc-ans-fill);
+  box-shadow: inset 0 -2px 0 rgba(22, 163, 74, 0.35);
+  color: var(--calc-ans-ink);
+  font-weight: 800;
+  animation: none;
+}
+
+.course-container .lf-block.calc-answer.calc-answer--final .lf-latex,
+.course-container .lf-block.calc-answer.calc-answer--final .lf-latex--display,
+.course-container .lf-block.calc-answer.calc-answer--final .katex-display {
+  min-width: 0;
+  margin: 0;
+  text-align: left !important;
+  color: var(--calc-ans-ink);
+  font-weight: 700;
+}
+
+.course-container .lf-block.calc-answer.calc-answer--final .katex-display > .katex {
+  text-align: left;
+}
+
+.course-container .lf-block.calc-answer.calc-answer--final .katex {
+  color: var(--calc-ans-ink);
+}
+
+/* latex 答案：整式再罩一层绿色标记底 */
+.course-container .lf-block.calc-answer.calc-answer--final .lf-latex {
+  display: inline-block;
+  padding: 0.18em 0.55em 0.22em;
+  border-radius: 8px;
+  background: var(--calc-ans-fill);
+  box-shadow: inset 0 -2px 0 rgba(22, 163, 74, 0.35);
+}
+
+/* 左栏也要可滚：默认 top-split 左栏 overflow:hidden，本课改为累加计算 */
+.course-container[data-layout="top-split"] .course-scroll-left {
+  --cc-scroll-bottom-inset: 48px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  scroll-padding-bottom: var(--cc-scroll-bottom-inset, 48px);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  box-sizing: border-box;
+  padding-bottom: 8px;
+}
+
+.course-container[data-layout="top-split"] .course-scroll-left::after {
+  content: '';
+  display: block;
+  flex: 1 0 auto;
+  min-height: var(--cc-scroll-bottom-inset, 48px);
+  pointer-events: none;
+}
+
+/* 右栏半透明背板：无内容时不显示，有 .lf-block 时平滑显现 */
+.course-container[data-layout="top-split"] .course-scroll-right {
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0);
+  border: 1px solid transparent;
+  box-shadow: none;
+  backdrop-filter: blur(0);
+  -webkit-backdrop-filter: blur(0);
+  padding: 8px 12px 12px;
+  box-sizing: border-box;
+  transition:
+    background-color 0.4s ease,
+    border-color 0.4s ease,
+    box-shadow 0.4s ease,
+    backdrop-filter 0.4s ease;
+}
+
+.course-container[data-layout="top-split"] .course-scroll-right:has(> .lf-block) {
+  background: rgba(255, 255, 255, 0.42);
+  border-color: rgba(148, 163, 184, 0.28);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* left-right 题头已在 scroll-top 文档流内，去掉引擎为绝对定位预留的 36px 顶空 */
+.course-container[data-layout="left-right"] .course-body {
+  padding-top: 8px;
+}
+
+/* 多题纵向叠放：每题至少一屏（top-split 例题 + left-right 练习） */
+.course-flow.course-flow--stack:has(.course-container[data-layout="top-split"]),
+.course-flow.course-flow--stack:has(.course-container[data-layout="left-right"]) {
+  height: auto;
+  min-height: 100%;
+  overflow: visible;
+  display: block;
+  padding-bottom: 160px;
+}
+
+.course-flow.course-flow--stack .course-container[data-layout="top-split"],
+.course-flow.course-flow--stack .course-container[data-layout="left-right"] {
+  flex: none;
+  min-height: var(--cc-stack-panel-min, 680px);
+  height: var(--cc-stack-panel-min, 680px);
+  margin-bottom: var(--lf-block-gap, 16px);
+}
+
+.course-flow.course-flow--stack .course-container[data-layout="top-split"]:last-child,
+.course-flow.course-flow--stack .course-container[data-layout="left-right"]:last-child {
+  margin-bottom: 0;
+}

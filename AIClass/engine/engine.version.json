@@ -1,0 +1,21 @@
+{
+  "version": "1.0.0",
+  "schemaVersion": 1,
+  "capabilities": [
+    "file-runtime",
+    "post-message",
+    "text-only",
+    "figure-text",
+    "top-split",
+    "left-right",
+    "text-over-figure",
+    "choice",
+    "fill",
+    "oral",
+    "handwriting",
+    "latex",
+    "replace-key",
+    "figure-state",
+    "course-extension"
+  ]
+}

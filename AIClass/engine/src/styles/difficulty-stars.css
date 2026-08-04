@@ -1,0 +1,56 @@
+/* 难度星级胶囊 — 与 course-presentation 题干行配合 */
+.course-difficulty {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.34em;
+  margin: 0;
+  height: 1.42em;
+  padding: 0 0.62em 0 0.55em;
+  box-sizing: border-box;
+  line-height: 1;
+  flex-shrink: 0;
+  overflow: visible;
+  background: rgba(241, 245, 249, 0.92);
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  border-radius: 999px;
+  box-shadow: 0 1px 2px rgba(148, 163, 184, 0.08);
+}
+
+.course-difficulty__stars {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  height: 1.05em;
+  width: auto;
+  overflow: visible;
+  flex-shrink: 0;
+  align-self: center;
+}
+
+.course-difficulty__star {
+  display: block;
+  height: 1.05em;
+  width: auto;
+  flex-shrink: 0;
+  object-fit: contain;
+  user-select: none;
+  -webkit-user-drag: none;
+  background: transparent;
+}
+
+.course-difficulty__star.is-dim {
+  opacity: 1;
+}
+
+.course-difficulty__label {
+  font-size: 0.68em;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  color: #7a8da3;
+  white-space: nowrap;
+  line-height: 1;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+}

@@ -1,0 +1,44 @@
+/* 细线 overlay 滚动条 + 自动隐藏 — 滚动时显示（.is-scrolling），1s 无滚动淡出 */
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-button,
+::-webkit-scrollbar-button:single-button:vertical:decrement,
+::-webkit-scrollbar-button:single-button:vertical:increment {
+  display: none;
+  width: 0;
+  height: 0;
+  -webkit-appearance: none;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 999px;
+  transition: background-color 0.35s ease;
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* 滚动中显示（由 scrollbar-auto-hide.js 控制；StemExpand 用组件内 stem-expand-scrolling） */
+.is-scrolling::-webkit-scrollbar-thumb {
+  background: rgba(60, 60, 67, 0.32);
+}
+
+/* Firefox：细线 + 默认透明（自动隐藏），滚动中（.is-scrolling）显示 */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+
+.is-scrolling {
+  scrollbar-color: rgba(60, 60, 67, 0.32) transparent;
+}

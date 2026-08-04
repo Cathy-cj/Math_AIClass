@@ -1,0 +1,32 @@
+{
+  "name": "aiclass-engine",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "vendor:sync": "node tools/sync-vendor.mjs",
+    "course:new": "node tools/aiclass.mjs course:new",
+    "course:check": "node tools/aiclass.mjs course:check",
+    "lesson:generate": "node tools/aiclass.mjs lesson:generate",
+    "course:preview": "node tools/aiclass.mjs course:preview",
+    "course:export": "node tools/aiclass.mjs course:export",
+    "course:restore": "node tools/aiclass.mjs course:restore",
+    "pipeline:board": "node tools/pipeline-board.mjs",
+    "figure:preview": "node tools/figure-preview.mjs",
+    "test": "node tests/run-tests.mjs",
+    "test:browser": "node tests/browser-smoke.mjs && node tests/overlay-scrollbar-pin-smoke.mjs",
+    "test:course-browser": "node tests/course-browser-smoke.mjs",
+    "test:visual-theme": "node tests/visual-theme-smoke.mjs",
+    "test:debug-shell": "node tests/debug-shell-smoke.mjs",
+    "test:stem-zoom": "node tests/stem-zoom-fit-smoke.mjs && node tests/stem-zoom-smoke.mjs"
+  },
+  "dependencies": {
+    "adm-zip": "^0.6.0",
+    "ajv": "^8.20.0",
+    "jsxgraph": "1.12.2",
+    "katex": "^0.18.1",
+    "konva": "^10.3.0"
+  },
+  "devDependencies": {
+    "playwright": "^1.61.1"
+  }
+}

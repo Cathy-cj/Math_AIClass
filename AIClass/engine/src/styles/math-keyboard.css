@@ -1,0 +1,456 @@
+/* 浮层数学键盘样式 — 与 components/math-keyboard.js 配套 */
+
+.aic-float-kb {
+  --aic-kb-viewport-scale: 1;
+  --aic-kb-panel-width: 340px;
+  --aic-kb-panel-height: 272px;
+  --aic-kb-fab-gap: 64px;
+  /* 与页面方格纸手写风一致 — 暖纸 + 墨字，低饱和 */
+  --kb-paper: var(--lf-paper, #fffefb);
+  --kb-ink: var(--lf-ink, #0f172a);
+  --kb-muted: var(--lf-muted, #64748b);
+  --kb-line: var(--lf-grid-line, rgba(178, 186, 200, 0.22));
+  --kb-line-bold: var(--lf-grid-line-bold, rgba(158, 168, 184, 0.32));
+  --kb-accent: var(--lf-blue, #2c74f3);
+  --kb-key-face: #ffffff;
+  --kb-key-note: #f7f4ef;
+  --kb-key-edge: rgba(158, 168, 184, 0.42);
+  --kb-key-edge-note: rgba(140, 152, 168, 0.5);
+  --kb-delete: #a84848;
+  position: fixed;
+  z-index: 9200;
+  inset: 0;
+  pointer-events: none;
+  font-family: var(--lf-font, "Microsoft YaHei", "PingFang SC", sans-serif);
+}
+
+.aic-float-kb > * {
+  pointer-events: auto;
+}
+
+.aic-float-kb:not(.is-visible) {
+  pointer-events: none;
+}
+
+.aic-float-kb:not(.is-visible) .aic-float-kb-fab,
+.aic-float-kb:not(.is-visible) .aic-float-kb-panel {
+  visibility: hidden;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.aic-float-kb.is-disabled {
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+/* ── FAB ── */
+.aic-float-kb-fab {
+  position: fixed;
+  left: max(
+    calc(16px * var(--aic-kb-viewport-scale)),
+    calc(env(safe-area-inset-left, 0px) + 12px * var(--aic-kb-viewport-scale))
+  );
+  bottom: max(
+    calc(20px * var(--aic-kb-viewport-scale)),
+    calc(env(safe-area-inset-bottom, 0px) + 16px * var(--aic-kb-viewport-scale))
+  );
+  z-index: 9210;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(52px * var(--aic-kb-viewport-scale));
+  height: calc(52px * var(--aic-kb-viewport-scale));
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--kb-accent);
+  color: #fff;
+  cursor: pointer;
+  outline: none;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  box-shadow:
+    0 4px 14px rgba(44, 116, 243, 0.28),
+    0 1px 3px rgba(15, 23, 42, 0.1);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.aic-float-kb-fab svg {
+  width: calc(26px * var(--aic-kb-viewport-scale));
+  height: calc(26px * var(--aic-kb-viewport-scale));
+}
+
+.aic-float-kb-fab:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 6px 18px rgba(44, 116, 243, 0.32),
+    0 2px 4px rgba(15, 23, 42, 0.1);
+}
+
+.aic-float-kb-fab:active {
+  transform: translateY(1px);
+}
+
+.aic-float-kb.is-open .aic-float-kb-fab {
+  background: #3d82f5;
+}
+
+/* ── Panel ── */
+.aic-float-kb-panel {
+  position: fixed;
+  left: max(
+    calc(16px * var(--aic-kb-viewport-scale)),
+    calc(env(safe-area-inset-left, 0px) + 12px * var(--aic-kb-viewport-scale))
+  );
+  bottom: calc(
+    max(
+      calc(20px * var(--aic-kb-viewport-scale)),
+      calc(env(safe-area-inset-bottom, 0px) + 16px * var(--aic-kb-viewport-scale))
+    ) + var(--aic-kb-fab-gap)
+  );
+  z-index: 9210;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  width: var(--aic-kb-panel-width);
+  height: var(--aic-kb-panel-height);
+  min-width: calc(260px * var(--aic-kb-viewport-scale));
+  max-width: calc(100vw - 24px);
+  max-height: calc(100vh - 80px);
+  padding: calc(12px * var(--aic-kb-viewport-scale)) calc(12px * var(--aic-kb-viewport-scale)) calc(10px * var(--aic-kb-viewport-scale));
+  border-radius: calc(14px * var(--aic-kb-viewport-scale));
+  background: var(--kb-paper);
+  border: 1px solid var(--kb-line-bold);
+  box-shadow:
+    0 8px 24px rgba(15, 23, 42, 0.1),
+    0 2px 6px rgba(15, 23, 42, 0.05);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(12px);
+  transform-origin: bottom left;
+  overflow: hidden;
+  transition:
+    opacity 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+    visibility 0.22s;
+}
+
+.aic-float-kb.is-open .aic-float-kb-panel {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.aic-float-kb.is-anchor-bottom-right .aic-float-kb-fab {
+  left: auto;
+  right: max(
+    calc(16px * var(--aic-kb-viewport-scale)),
+    calc(env(safe-area-inset-right, 0px) + 12px * var(--aic-kb-viewport-scale))
+  );
+}
+
+.aic-float-kb.is-anchor-bottom-right .aic-float-kb-panel {
+  left: auto;
+  right: calc(
+    max(
+      calc(16px * var(--aic-kb-viewport-scale)),
+      calc(env(safe-area-inset-right, 0px) + 12px * var(--aic-kb-viewport-scale))
+    )
+    + calc(52px * var(--aic-kb-viewport-scale))
+    + calc(12px * var(--aic-kb-viewport-scale))
+  );
+  bottom: max(
+    calc(20px * var(--aic-kb-viewport-scale)),
+    calc(env(safe-area-inset-bottom, 0px) + 16px * var(--aic-kb-viewport-scale))
+  );
+  transform-origin: bottom right;
+  transform: translateX(12px);
+}
+
+.aic-float-kb.is-anchor-bottom-right.is-open .aic-float-kb-panel {
+  transform: translateX(0);
+}
+
+/* ── Header ── */
+.aic-float-kb-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(8px * var(--aic-kb-viewport-scale));
+  flex-shrink: 0;
+  margin-bottom: calc(10px * var(--aic-kb-viewport-scale));
+}
+
+.aic-float-kb-drag {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(6px * var(--aic-kb-viewport-scale));
+  padding: calc(6px * var(--aic-kb-viewport-scale)) calc(12px * var(--aic-kb-viewport-scale)) calc(6px * var(--aic-kb-viewport-scale)) calc(10px * var(--aic-kb-viewport-scale));
+  border: 1px solid var(--kb-line-bold);
+  border-radius: 999px;
+  background: var(--kb-key-face);
+  color: var(--kb-muted);
+  font-size: calc(13px * var(--aic-kb-viewport-scale));
+  font-weight: 600;
+  cursor: grab;
+  outline: none;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+.aic-float-kb-drag svg {
+  width: calc(14px * var(--aic-kb-viewport-scale));
+  height: calc(14px * var(--aic-kb-viewport-scale));
+  flex-shrink: 0;
+}
+
+.aic-float-kb-drag:active {
+  cursor: grabbing;
+}
+
+.aic-float-kb-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(28px * var(--aic-kb-viewport-scale));
+  height: calc(28px * var(--aic-kb-viewport-scale));
+  padding: 0;
+  border: 1px solid var(--kb-line-bold);
+  border-radius: 50%;
+  background: var(--kb-key-face);
+  color: var(--kb-muted);
+  font-size: calc(20px * var(--aic-kb-viewport-scale));
+  line-height: 1;
+  cursor: pointer;
+  outline: none;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+.aic-float-kb-close:hover {
+  background: var(--kb-key-note);
+  color: var(--kb-ink);
+}
+
+/* ── Grid：方格纸底 ── */
+.aic-float-kb-grid {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  grid-template-rows: repeat(5, 1fr);
+  flex: 1 1 0;
+  min-height: 0;
+  gap: calc(5px * var(--aic-kb-viewport-scale));
+  padding: calc(5px * var(--aic-kb-viewport-scale));
+  border-radius: calc(10px * var(--aic-kb-viewport-scale));
+  border: 1px solid var(--kb-line);
+  background-color: var(--kb-paper);
+  background-image:
+    linear-gradient(var(--kb-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--kb-line) 1px, transparent 1px);
+  background-size:
+    calc(20px * var(--aic-kb-viewport-scale)) calc(20px * var(--aic-kb-viewport-scale)),
+    calc(20px * var(--aic-kb-viewport-scale)) calc(20px * var(--aic-kb-viewport-scale));
+}
+
+.aic-float-kb-grid::before,
+.aic-float-kb-grid::after {
+  content: '';
+  position: absolute;
+  top: calc(5px * var(--aic-kb-viewport-scale));
+  bottom: calc(5px * var(--aic-kb-viewport-scale));
+  width: 1px;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    transparent,
+    var(--kb-line-bold) 14%,
+    var(--kb-line-bold) 86%,
+    transparent
+  );
+}
+
+.aic-float-kb-grid::before {
+  left: calc(60% - 0.5px);
+}
+
+.aic-float-kb-grid::after {
+  left: calc(80% - 0.5px);
+}
+
+.aic-float-kb-gap {
+  display: block;
+  min-height: 0;
+}
+
+.aic-float-kb-key {
+  appearance: none;
+  -webkit-appearance: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  width: 100%;
+  padding: 0 calc(4px * var(--aic-kb-viewport-scale));
+  border: 1px solid var(--kb-key-edge);
+  border-radius: calc(8px * var(--aic-kb-viewport-scale));
+  font-family: inherit;
+  font-size: calc(18px * var(--aic-kb-viewport-scale));
+  font-weight: 700;
+  line-height: 1;
+  color: var(--kb-ink);
+  cursor: pointer;
+  outline: none;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  background: var(--kb-key-face);
+  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.04);
+  transition: transform 0.1s ease, background 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
+}
+
+/* 数字：白底墨字 */
+.aic-float-kb-key--digit {
+  background: var(--kb-key-face);
+  border-color: var(--kb-key-edge);
+  color: var(--kb-ink);
+}
+
+/* 运算 / 变量 / 符号 / 导航：暖纸底 + 略深描边，同色墨 */
+.aic-float-kb-key--operator,
+.aic-float-kb-key--var,
+.aic-float-kb-key--symbol,
+.aic-float-kb-key--nav {
+  background: var(--kb-key-note);
+  border-color: var(--kb-key-edge-note);
+  color: var(--kb-ink);
+}
+
+.aic-float-kb-key--operator.is-equals {
+  font-size: calc(20px * var(--aic-kb-viewport-scale));
+  font-weight: 800;
+}
+
+.aic-float-kb-key.is-var {
+  font-style: italic;
+  font-weight: 600;
+  color: var(--kb-muted);
+}
+
+.aic-float-kb-key.is-backspace {
+  background: var(--kb-key-note);
+  border-color: var(--kb-key-edge-note);
+  color: var(--kb-delete);
+}
+
+.aic-float-kb-key.is-backspace svg,
+.aic-float-kb-key.is-next-field svg {
+  width: calc(22px * var(--aic-kb-viewport-scale));
+  height: calc(22px * var(--aic-kb-viewport-scale));
+}
+
+.aic-float-kb-key.is-next-field:disabled {
+  opacity: 0.35;
+}
+
+.aic-float-kb-dual-cell {
+  display: flex;
+  align-items: stretch;
+  gap: calc(4px * var(--aic-kb-viewport-scale));
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+}
+
+.aic-float-kb-dual-cell .aic-float-kb-key.is-paren-half {
+  flex: 1 1 0;
+  min-width: 0;
+  width: auto;
+}
+
+.aic-float-kb-fraction {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(2px * var(--aic-kb-viewport-scale));
+  font-size: calc(10px * var(--aic-kb-viewport-scale));
+  line-height: 1;
+  color: currentColor;
+}
+
+.aic-float-kb-fraction .bar {
+  display: block;
+  width: calc(16px * var(--aic-kb-viewport-scale));
+  height: calc(2px * var(--aic-kb-viewport-scale));
+  border-radius: 1px;
+  background: currentColor;
+}
+
+.aic-float-kb-key:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 5px rgba(15, 23, 42, 0.08);
+}
+
+.aic-float-kb-key--digit:hover:not(:disabled) {
+  background: #fff;
+  border-color: var(--kb-key-edge-note);
+}
+
+.aic-float-kb-key--operator:hover:not(:disabled),
+.aic-float-kb-key--var:hover:not(:disabled),
+.aic-float-kb-key--symbol:hover:not(:disabled),
+.aic-float-kb-key--nav:hover:not(:disabled),
+.aic-float-kb-key.is-backspace:hover:not(:disabled) {
+  background: #f3efe8;
+  border-color: rgba(120, 135, 155, 0.58);
+}
+
+.aic-float-kb-key:active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.08);
+  background: #ece8e1;
+}
+
+.aic-float-kb-key:focus-visible {
+  box-shadow:
+    0 0 0 2px #fff,
+    0 0 0 3px var(--kb-accent);
+}
+
+.aic-float-kb-key:disabled {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+/* ── Resize handle ── */
+.aic-float-kb-resize {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: calc(28px * var(--aic-kb-viewport-scale));
+  height: calc(28px * var(--aic-kb-viewport-scale));
+  cursor: nwse-resize;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  background: linear-gradient(135deg, transparent 58%, rgba(100, 116, 139, 0.35) 58%);
+  border-radius: 0 0 calc(4px * var(--aic-kb-viewport-scale)) 0;
+}
+
+/* Active fill input — 与页面荧光笔高亮一致 */
+.lf-fill-input.is-active:not(:disabled) {
+  background: var(--lf-highlight, rgba(255, 214, 76, 0.34)) !important;
+  border-bottom-color: rgba(55, 65, 80, 0.55) !important;
+}
+
+.lf-fill-input[readonly] {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  cursor: pointer;
+}

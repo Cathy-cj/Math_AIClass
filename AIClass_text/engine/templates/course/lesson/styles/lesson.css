@@ -1,0 +1,15 @@
+/* 课程级样式入口：只放主题 token 与本课 figure/容器 override。
+   通用题干、引导链、难度胶囊见 src/styles/course-presentation.css
+
+   引导链契约（圆点与竖茎绑定在 .cc-guide-track，勿拆开画）：
+   - DOM：每个环节/槽位自带 .cc-guide-track > .cc-guide-dot? + .cc-guide-stem
+   - Token：--cc-guide-dot-left / --cc-guide-dot-size / --cc-guide-dot-top
+   - 竖茎 left = calc(dot-left + dot-size/2 - rail-width/2)，与圆点同轨
+   - 禁止在本文件写死 --cc-guide-rail-x: Npx，也禁止再画面板级虚线伪元素
+*/
+:root {
+  --aic-course-accent: #2563eb;
+  --aic-course-success: #16a34a;
+  --aic-course-warning: #d97706;
+  --aic-course-label-color: #1a4fbf;
+}

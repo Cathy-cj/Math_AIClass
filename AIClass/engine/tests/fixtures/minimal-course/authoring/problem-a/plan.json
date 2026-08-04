@@ -1,0 +1,109 @@
+{
+  "schemaVersion": 1,
+  "id": "problem-a",
+  "title": "合成模块 A",
+  "source": "（合成测试来源）",
+  "moduleType": "example",
+  "difficulty": 1,
+  "layout": "left-right",
+  "quickQALayout": "above-body",
+  "figureTemplate": "synthetic-board",
+  "problemBrief": {
+    "known": ["合成条件 A"],
+    "ask": "验证例题模块"
+  },
+  "guidanceChain": [
+    {
+      "title": "审题环节",
+      "desc": "验证框架结构"
+    }
+  ],
+  "steps": [
+    {
+      "id": "start",
+      "action": "测试_开始",
+      "phase": "阶段 A",
+      "group": 0,
+      "agent": {
+        "type": "explain",
+        "description": "显示合成测试起始状态。"
+      },
+      "figure": {
+        "state": "default",
+        "actions": [
+          {
+            "op": "show",
+            "targets": ["shape-a"]
+          }
+        ]
+      },
+      "push": [
+        {
+          "type": "text",
+          "region": "top",
+          "lines": ["合成内容 A"]
+        }
+      ]
+    },
+    {
+      "id": "step-01",
+      "action": "测试_步骤01",
+      "phase": "审题环节",
+      "group": 1,
+      "problemBrief": {
+        "known": 1,
+        "ask": true
+      },
+      "agent": {
+        "type": "ask",
+        "description": "验证同卡更新和选择交互。"
+      },
+      "figure": {
+        "state": "focus",
+        "actions": [
+          {
+            "op": "highlight",
+            "targets": ["shape-a"]
+          }
+        ]
+      },
+      "push": [
+        {
+          "type": "text",
+          "region": "right",
+          "replaceKey": "problem-a:result",
+          "lines": ["合成内容 A；状态已更新"]
+        },
+        {
+          "type": "choice",
+          "region": "right",
+          "id": "synthetic-choice",
+          "prompt": "请选择占位选项",
+          "options": [
+            { "label": "选项 A", "value": "A" },
+            { "label": "选项 B", "value": "B" }
+          ],
+          "answer": "A",
+          "onSubmit": "reportSingleChoice"
+        }
+      ]
+    }
+  ],
+  "quickQA": [
+    {
+      "id": "qa-a",
+      "question": "合成问题 A",
+      "answer": "合成答案 A"
+    },
+    {
+      "id": "qa-b",
+      "question": "合成条件 A 是否已知？",
+      "answer": "是"
+    },
+    {
+      "id": "qa-c",
+      "question": "本题要验证什么？",
+      "answer": "例题模块"
+    }
+  ]
+}

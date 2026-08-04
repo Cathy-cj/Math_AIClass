@@ -1,0 +1,6 @@
+/* 课程级样式入口。只放主题 token 与课程扩展样式，不复制引擎 CSS。 */
+:root {
+  --aic-course-accent: #2563eb;
+  --aic-course-success: #16a34a;
+  --aic-course-warning: #d97706;
+}

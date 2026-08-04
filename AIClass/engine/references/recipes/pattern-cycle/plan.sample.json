@@ -1,0 +1,18 @@
+{
+  "referenceOnly": true,
+  "sentinel": "REFERENCE_ONLY_DO_NOT_COPY",
+  "archetype": "pattern-cycle",
+  "plan": {
+    "objective": "<fresh objective from current problem>",
+    "indexOrigin": "<zero-based or one-based>",
+    "cycle": {"states": ["<state-A>", "<state-B>", "<state-C>"], "length": "<derived length>", "evidence": "<why repetition continues>"},
+    "steps": [
+      {"id": "s1", "action": "enumerate", "reasoning": "Record consecutive states with indices.", "output": "<indexed states>"},
+      {"id": "s2", "action": "verify", "reasoning": "Show the transition returns to the same state.", "output": "<cycle proof>"},
+      {"id": "s3", "action": "reduce", "reasoning": "Reduce the target index modulo cycle length.", "output": "<cycle position>"},
+      {"id": "s4", "action": "resolve", "reasoning": "Match the reduced position to a state.", "output": "<target state>"},
+      {"id": "s5", "action": "validate", "reasoning": "Check origin and exact-cycle cases.", "output": "<checked conclusion>"}
+    ],
+    "presentation": {"visuals": ["indexed state strip", "cycle bracket"], "narration": "generate original wording"}
+  }
+}

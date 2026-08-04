@@ -1,0 +1,10 @@
+{
+  "authoringRoots": {
+    "mathSyllabus": "../math_syllabus"
+  },
+  "runtime": {
+    "katexBase": "vendor/katex/",
+    "konvaSrc": "vendor/konva/konva.min.js",
+    "jsxgraphBase": "vendor/jsxgraph/"
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aiclass.local/schemas/course-lock.schema.json",
+  "title": "AIClass exported course lock",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "courseId",
+    "courseVersion",
+    "engineVersion",
+    "inputs",
+    "outputs"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "courseId": { "type": "string" },
+    "courseVersion": { "type": "string" },
+    "engineVersion": { "type": "string" },
+    "engineCommit": { "type": ["string", "null"] },
+    "courseCommit": { "type": ["string", "null"] },
+    "inputs": {
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    },
+    "outputs": {
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    },
+    "toolVersions": {
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    }
+  }
+}

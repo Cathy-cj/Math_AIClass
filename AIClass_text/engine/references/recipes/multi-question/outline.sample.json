@@ -1,0 +1,15 @@
+{
+  "referenceOnly": true,
+  "sentinel": "REFERENCE_ONLY_DO_NOT_COPY",
+  "archetype": "multi-question",
+  "outline": {
+    "goal": "Answer multiple explicit asks while preserving dependencies and shared setup.",
+    "stages": [
+      {"id": "inventory", "intent": "List each ask and its expected output."},
+      {"id": "dependencies", "intent": "Map shared givens and prerequisite results."},
+      {"id": "shared-setup", "intent": "Build common definitions once."},
+      {"id": "answer-branches", "intent": "Resolve each ask in dependency order."},
+      {"id": "cross-check", "intent": "Verify completeness and consistency across answers."}
+    ]
+  }
+}

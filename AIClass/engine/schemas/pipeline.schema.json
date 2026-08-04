@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aiclass.local/schemas/pipeline.schema.json",
+  "title": "AIClass course pipeline board",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "courseId", "problems"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "schemaVersion": { "const": 1 },
+    "courseId": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{1,47}$"
+    },
+    "activeProblemId": {
+      "type": ["string", "null"],
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}$"
+    },
+    "problems": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["problemId", "gates"],
+        "properties": {
+          "problemId": {
+            "type": "string",
+            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}$"
+          },
+          "needsFigure": { "type": "boolean" },
+          "previewOk": { "type": "boolean" },
+          "notes": { "type": "string" },
+          "gates": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["outlineOk", "figureOk", "planOk"],
+            "properties": {
+              "outlineOk": { "type": "boolean" },
+              "figureOk": { "type": "boolean" },
+              "planOk": { "type": "boolean" }
+            }
+          }
+        }
+      }
+    }
+  }
+}

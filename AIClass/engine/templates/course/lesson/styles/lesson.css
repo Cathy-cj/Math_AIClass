@@ -1,0 +1,8 @@
+/* 课程级样式入口：只放主题 token 与本课 figure/容器 override。
+   通用题干、引导链、难度胶囊见 src/styles/course-presentation.css */
+:root {
+  --aic-course-accent: #2563eb;
+  --aic-course-success: #16a34a;
+  --aic-course-warning: #d97706;
+  --aic-course-label-color: #1a4fbf;
+}

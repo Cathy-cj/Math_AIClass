@@ -1,0 +1,46 @@
+/* 背景板三层结构：viewport-bg → board → stage */
+
+.lf-viewport-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-color: var(--lf-paper);
+  background-image:
+    linear-gradient(var(--lf-grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--lf-grid-line) 1px, transparent 1px),
+    linear-gradient(var(--lf-grid-line-bold) 1px, transparent 1px),
+    linear-gradient(90deg, var(--lf-grid-line-bold) 1px, transparent 1px);
+  background-size:
+    var(--lf-grid-unit) var(--lf-grid-unit),
+    var(--lf-grid-unit) var(--lf-grid-unit),
+    calc(var(--lf-grid-unit) * 5) calc(var(--lf-grid-unit) * 5),
+    calc(var(--lf-grid-unit) * 5) calc(var(--lf-grid-unit) * 5);
+}
+
+.lf-board {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.lf-stage {
+  position: absolute;
+  transform-origin: top left;
+  pointer-events: auto;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.lf-stage.lf-scroll-locked {
+  overflow: hidden !important;
+  touch-action: none;
+}
+
+.lf-stage::-webkit-scrollbar {
+  display: none;
+}

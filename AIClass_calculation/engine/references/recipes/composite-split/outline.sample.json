@@ -1,0 +1,15 @@
+{
+  "referenceOnly": true,
+  "sentinel": "REFERENCE_ONLY_DO_NOT_COPY",
+  "archetype": "composite-split",
+  "outline": {
+    "goal": "Decompose a whole into non-overlapping parts and recombine results.",
+    "stages": [
+      {"id": "define-whole", "intent": "Clarify the target whole and invariants."},
+      {"id": "split", "intent": "Choose a complete, non-overlapping partition."},
+      {"id": "solve-parts", "intent": "Resolve each part with local reasoning."},
+      {"id": "combine", "intent": "Recombine with the correct operation."},
+      {"id": "check", "intent": "Check coverage, overlap, and consistency."}
+    ]
+  }
+}

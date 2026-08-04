@@ -1,0 +1,12 @@
+node_modules/
+dist/
+artifacts/
+workspace.local.json
+*.log
+.DS_Store
+Thumbs.db
+
+# 冒烟/可视化临时产物
+.tmp-shots/
+tests/_shots/
+tests/_tmp-*

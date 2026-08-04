@@ -1,0 +1,35 @@
+/* readList widget — 作用域 .course-container */
+
+.course-container .lf-read-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 2px 0 0;
+  margin: calc(var(--cc-body-size, 24px) * 0.2) 0;
+}
+
+.course-container .lf-read-line {
+  font-size: var(--cc-body-size, var(--lf-body-size, 24px));
+  line-height: var(--cc-line-height, var(--lf-line-height, 1.58));
+}
+
+.course-container .lf-read-label {
+  display: inline-block;
+  min-width: 3em;
+  color: #265da9;
+  font-weight: 800;
+}
+
+.course-container .lf-read-known .lf-read-item {
+  background: transparent;
+}
+
+.course-container .lf-read-ask .lf-read-item {
+  background: var(--lf-ask-bg, rgba(255, 142, 178, 0.16));
+  font-weight: 800;
+}
+
+.course-container .lf-read-item {
+  display: inline;
+  padding: 0 4px;
+}
