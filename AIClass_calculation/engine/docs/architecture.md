@@ -76,14 +76,14 @@ math_syllabus/lesson/{id}/plan.json
 
 `npm run vendor:sync` → `vendor/katex`。导出时整包拷入 dist。
 
-## Agent 识别结果回显
+## Agent 作答结果回显
 
 手写板和 OCR 由宿主侧负责。Agent 拿到结果后，向课件 iframe 发送既有
 `{ action, params }` 消息：
 
 ```js
 iframe.contentWindow.postMessage({
-  action: '识别结果_回显',
+  action: '作答结果_回显',
   params: {
     content: '识别到：$x=3$，验算：$$2x+1=7$$',
     targetAction: '练习题的入口 action'
@@ -94,8 +94,8 @@ iframe.contentWindow.postMessage({
 `content` 可混排普通文字、`$...$` 行内公式与 `$$...$$` 独立公式。运行时先按
 纯文本插入，再由本地 KaTeX 渲染，不执行 HTML。`targetAction` 定位已经创建的
 练习题容器；结果固定显示在其右侧滚动区顶部。同题的新结果替换旧结果，且不会触发
-判题、提交或教学步骤推进。课件会回传 `recognition_result_shown`；需要移除结果时发送
-`识别结果_清除` 并携带同一 `targetAction`。
+判题、提交或教学步骤推进。课件会回传 `answer_result_shown`；需要移除结果时发送
+`作答结果_清除` 并携带同一 `targetAction`。
 
 ## 相关文档
 

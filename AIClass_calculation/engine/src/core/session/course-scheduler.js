@@ -65,14 +65,14 @@
 
   var RECOGNITION_RESULT_RUNTIME_ACTIONS = [
     {
-      name: '识别结果_回显',
+      name: '作答结果_回显',
       params: ['content', 'targetAction'],
       description: '在目标练习题右侧顶部回显 Agent 返回的文字与 LaTeX；不判题、不提交、不推进步骤'
     },
     {
-      name: '识别结果_清除',
+      name: '作答结果_清除',
       params: ['targetAction'],
-      description: '清除目标练习题右侧顶部的识别结果'
+      description: '清除目标练习题右侧顶部的作答结果'
     }
   ]
 
@@ -1363,7 +1363,7 @@
       if (!meta) {
         return {
           code: 'INVALID_TARGET_ACTION',
-          message: '未找到识别结果目标 action: ' + targetAction
+          message: '未找到作答结果目标 action: ' + targetAction
         }
       }
       record = this.host.get(meta.moduleId, meta.containerIdx)
@@ -1390,7 +1390,7 @@
     if (!record) {
       return {
         code: 'CONTAINER_NOT_READY',
-        message: '当前没有可回显识别结果的课件容器'
+        message: '当前没有可回显作答结果的课件容器'
       }
     }
     return { record: record, meta: meta }
@@ -1399,14 +1399,14 @@
   CourseScheduler.prototype.showRecognitionResult = function (params) {
     params = params || {}
     if (params.content == null || String(params.content).trim() === '') {
-      return this._fail('INVALID_PARAMS', '识别结果_回显 需要非空 params.content', {
-        receivedAction: '识别结果_回显'
+      return this._fail('INVALID_PARAMS', '作答结果_回显 需要非空 params.content', {
+        receivedAction: '作答结果_回显'
       })
     }
     var target = this._resolveRecognitionResultContainer(params.targetAction)
     if (!target.record) {
       return this._fail(target.code, target.message, {
-        receivedAction: '识别结果_回显',
+        receivedAction: '作答结果_回显',
         targetAction: params.targetAction || null,
         moduleId: target.meta && target.meta.moduleId,
         containerIdx: target.meta && target.meta.containerIdx
@@ -1414,13 +1414,13 @@
     }
     var card = target.record.container.showRecognitionResult(String(params.content))
     if (!card) {
-      return this._fail('RECOGNITION_RESULT_MOUNT_FAILED', '识别结果无法挂载到目标容器', {
-        receivedAction: '识别结果_回显',
+      return this._fail('RECOGNITION_RESULT_MOUNT_FAILED', '作答结果无法挂载到目标容器', {
+        receivedAction: '作答结果_回显',
         targetAction: params.targetAction || null
       })
     }
     this.log.post({
-      type: 'recognition_result_shown',
+      type: 'answer_result_shown',
       status: 'ok',
       targetAction: params.targetAction || null,
       moduleId: target.record.container.meta.moduleId,
@@ -1434,13 +1434,13 @@
     var target = this._resolveRecognitionResultContainer(params.targetAction)
     if (!target.record) {
       return this._fail(target.code, target.message, {
-        receivedAction: '识别结果_清除',
+        receivedAction: '作答结果_清除',
         targetAction: params.targetAction || null
       }, '请先发送目标练习题的入口 action')
     }
     target.record.container.clearRecognitionResult()
     this.log.post({
-      type: 'recognition_result_cleared',
+      type: 'answer_result_cleared',
       status: 'ok',
       targetAction: params.targetAction || null,
       moduleId: target.record.container.meta.moduleId,
@@ -1473,8 +1473,8 @@
       this.log.post({ type: 'course_reset', status: 'ok' })
       return { ok: true }
     }
-    if (actionName === '识别结果_回显') return this.showRecognitionResult(params)
-    if (actionName === '识别结果_清除') return this.clearRecognitionResult(params)
+    if (actionName === '作答结果_回显') return this.showRecognitionResult(params)
+    if (actionName === '作答结果_清除') return this.clearRecognitionResult(params)
 
     var feyResolved = this._resolveFeynmanAction(actionName)
     if (feyResolved) {
