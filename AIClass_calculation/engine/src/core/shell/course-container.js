@@ -1,6 +1,7 @@
 // 统一容器：四种 layout + A/B 排版 + appendBlocks
 ;(function () {
-  var LAYOUTS = ['text-only', 'figure-text', 'text-over-figure', 'top-split', 'left-right']
+  // calculation 课件必须保留 top-split：拍照作答与演算都挂在左栏。
+  var LAYOUTS = ['text-only', 'top-split', 'left-right']
   var SPLIT_LAYOUTS = { 'top-split': true, 'left-right': true }
   var TOP_SPLIT_REGIONS = { top: true, left: true, right: true }
 
@@ -111,14 +112,6 @@
         node.parentNode.removeChild(node)
       })
     }
-  }
-
-  function removeStepBlocksInScroll(container, stepId, scrollEl) {
-    if (stepId == null || !scrollEl || !scrollEl.querySelectorAll) return
-    var sel = '.lf-block[data-step-id="' + String(stepId) + '"]'
-    scrollEl.querySelectorAll(sel).forEach(function (node) {
-      if (node.parentNode) node.parentNode.removeChild(node)
-    })
   }
 
   function removeReplaceKeyBlocks(container, replaceKey) {
@@ -239,14 +232,11 @@
 
   CourseContainer.prototype.getFigureSlot = function () { return this.figureSlot }
 
-  CourseContainer.prototype.clearStepBlocks = function (stepIds, retainIds, opts) {
-    opts = opts || {}
+  CourseContainer.prototype.clearStepBlocks = function (stepIds, retainIds) {
     var self = this
-    var scrollEl = opts.scrollEl || null
     ;(stepIds || []).forEach(function (stepId) {
       if (retainIds && retainIds.indexOf(stepId) >= 0) return
-      if (scrollEl) removeStepBlocksInScroll(self, stepId, scrollEl)
-      else removeStepBlocks(self, stepId)
+      removeStepBlocks(self, stepId)
     })
   }
 
@@ -324,9 +314,6 @@
 
       var el
       if (existingEl) {
-        if (window.AIClassCalcLineFit && typeof window.AIClassCalcLineFit.resetBlock === 'function') {
-          window.AIClassCalcLineFit.resetBlock(existingEl)
-        }
         if (window.AIClassWidgetRegistry &&
             typeof window.AIClassWidgetRegistry.renderBlock === 'function') {
           existingEl.innerHTML = ''
@@ -366,13 +353,10 @@
       }
     })
 
-    if (window.AIClassLatex && out.length) {
-      out.forEach(function (blockEl) {
-        window.AIClassLatex.render(blockEl)
+    if (window.AIClassLatex) {
+      allScrollEls(this).forEach(function (scrollEl) {
+        window.AIClassLatex.render(scrollEl)
       })
-    }
-    if (window.AIClassCalcLineFit && typeof window.AIClassCalcLineFit.applyAfterRender === 'function') {
-      window.AIClassCalcLineFit.applyAfterRender(self.el)
     }
     if (this.guidanceLayout === 'interleaved') {
       if (this.layout === 'text-only') this.placeGuidanceInStack()
@@ -386,35 +370,44 @@
         }
       }
     }
+    if (self.scrollRightEl && self.scrollRightEl._overlayScrollbarApi &&
+        typeof self.scrollRightEl._overlayScrollbarApi.sync === 'function') {
+      self.scrollRightEl._overlayScrollbarApi.sync()
+    }
     return out
   }
 
-  CourseContainer.prototype._recognitionResultTarget = function () {
+  CourseContainer.prototype._photoAnswerTarget = function () {
     if (this.layout === 'left-right' || this.layout === 'text-only') {
       return this.scrollStackEl || this.scrollRightEl
     }
-    // top-split：挂在左栏正文讲解流顶部，随后随自动滚动顶出视口
-    if (this.layout === 'top-split') {
-      return this.scrollLeftEl || this.scrollEl
-    }
+    // 计算课件的正文演算位于左栏；拍照作答结果也必须留在此处。
+    if (this.layout === 'top-split') return this.scrollLeftEl || this.scrollEl
     return this.scrollEl
   }
 
-  CourseContainer.prototype.showRecognitionResult = function (content) {
-    var target = this._recognitionResultTarget()
-    if (!target || !window.AIClassRecognitionResult) return null
+  CourseContainer.prototype.showPhotoAnswer = function (onPhotoRequest) {
+    var target = this._photoAnswerTarget()
+    if (!target || !window.AIClassPhotoAnswer) return null
 
-    this.clearRecognitionResult()
-    var card = AIClassRecognitionResult.create(content)
+    this.clearPhotoAnswer()
+    var card = AIClassPhotoAnswer.create(onPhotoRequest)
     target.insertBefore(card, target.firstChild)
     if (target.scrollTop != null) target.scrollTop = 0
     return card
   }
 
-  CourseContainer.prototype.clearRecognitionResult = function () {
-    var target = this._recognitionResultTarget()
+  CourseContainer.prototype.showPhotoResult = function (content) {
+    var target = this._photoAnswerTarget()
+    if (!target || !window.AIClassPhotoAnswer) return false
+    var card = target.querySelector('.cc-photo-answer')
+    return !!(card && AIClassPhotoAnswer.showResult(card, content))
+  }
+
+  CourseContainer.prototype.clearPhotoAnswer = function () {
+    var target = this._photoAnswerTarget()
     if (!target || !target.querySelectorAll) return
-    target.querySelectorAll('.cc-recognition-result').forEach(function (node) {
+    target.querySelectorAll('.cc-photo-answer').forEach(function (node) {
       if (node.parentNode) node.parentNode.removeChild(node)
     })
   }
@@ -474,8 +467,8 @@
       block.setAttribute('data-is-current-step', isActive ? 'true' : 'false')
     })
     this._syncChoiceBlocks(activeStepId)
-    if (window.AIClassComponent && typeof window.AIClassComponent.syncFillKeyboardVisibility === 'function') {
-      window.AIClassComponent.syncFillKeyboardVisibility()
+    if (window.AIClassComponent && typeof window.AIClassComponent.syncMathKeyboard === 'function') {
+      window.AIClassComponent.syncMathKeyboard()
     }
   }
 
@@ -777,7 +770,6 @@
   function create(options) {
     options = options || {}
     var layout = LAYOUTS.indexOf(options.layout) >= 0 ? options.layout : 'text-only'
-    options = Object.assign({}, options, { layout: layout })
     var mount = options.mount
     if (!mount) throw new Error('[CourseContainer] mount element required')
 

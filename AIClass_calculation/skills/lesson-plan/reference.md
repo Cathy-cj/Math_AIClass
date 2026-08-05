@@ -222,6 +222,15 @@
 ] }
 ```
 
+### 宿主提交与拍照协议
+
+- 普通互动上报严格为 `{ type: "user_submitted", kind, value }`，其中 `kind` 映射：
+  choice → `course_choice`、fill/matching → `course_fill`、oral → `voice`。
+- 拍照按钮只上报 `{ type: "user_submitted", kind: "course_photo" }`；`user_submitted` 禁止
+  添加 `source`、`status`、action、context 或题目对象。
+- 练题由 codegen 自动追加 `{actionPrefix}_作答_拍照`，排在开始 action 之后；宿主以
+  `{ type: "photo_result", value }` 回传 OCR 文本与 LaTeX。回显不属于 plan step，不推进教学。
+
 **揭晓方式两种，不要混用**：
 
 - `oral` 是**两段式**：问步只 push 问题；答步再 push `{ "attachStepId": "<问步短id>", "answer": "…" }` 把答案挂回问卡。

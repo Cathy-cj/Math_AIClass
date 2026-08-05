@@ -42,82 +42,90 @@ const result = await page.evaluate(async () => {
 
   window.AIClassMessageBridge.handleMessage({ data: { action: '测试_开始' } })
   window.AIClassMessageBridge.handleMessage({ data: { action: '测试_步骤01' } })
-  var logCountBeforeRecognition = window._frameworkLog.length
+  window.AIClassMessageBridge.handleMessage({ data: { action: '测试练_开始' } })
+  window.AIClassMessageBridge.handleMessage({ data: { action: '测试练_步骤01' } })
+  window.AIClassMessageBridge.handleMessage({ data: { action: '测试练_作答_拍照' } })
+  var logCountBeforePhotoResult = window._frameworkLog.length
+  var photoButton = document.querySelector('.cc-photo-answer-button')
+  if (photoButton) photoButton.click()
   window.AIClassMessageBridge.handleMessage({
     data: {
-      action: '作答结果_回显',
-      params: {
-        content: '识别到：$x=3$，验算：$$2x+1=7$$',
-        targetAction: '测试_开始'
-      }
-    }
-  })
-  window.AIClassMessageBridge.handleMessage({
-    data: {
-      action: '作答结果_回显',
-      params: {
-        content: '更新结果：$x=4$',
-        targetAction: '测试_开始'
-      }
+      type: 'photo_result',
+      value: '识别到：$x=3$，验算：$$2x+1=7$$'
     }
   })
   await new Promise((resolve) => setTimeout(resolve, 250))
-  var recognitionCards = document.querySelectorAll('.cc-recognition-result')
-  var recognitionCard = recognitionCards[0]
-  var targetStack = recognitionCard && recognitionCard.parentElement
-  var cardIsFirst = !!(recognitionCard && targetStack && targetStack.firstElementChild === recognitionCard)
+  var photoCards = document.querySelectorAll('.cc-photo-answer')
+  var photoCard = photoCards[0]
+  var targetStack = photoCard && photoCard.parentElement
+  var cardIsFirst = !!(photoCard && targetStack && targetStack.firstElementChild === photoCard)
   var cardInLeftScroll = !!(
-    recognitionCard &&
-    recognitionCard.closest &&
-    recognitionCard.closest('.course-scroll-left')
+    photoCard &&
+    photoCard.closest &&
+    photoCard.closest('.course-scroll-left')
   )
-  var logAfterRecognition = window._frameworkLog.slice(logCountBeforeRecognition)
-  window.AIClassMessageBridge.handleMessage({
-    data: {
-      action: '作答结果_清除',
-      params: { targetAction: '测试_开始' }
-    }
-  })
+  var logAfterPhotoResult = window._frameworkLog.slice(logCountBeforePhotoResult)
+  var logCountBeforeFallbackSubmit = window._frameworkLog.length
+  window.AIClassCoursewareSubmit = null
+  window.AIClassSubmitText.report('choice', 'A')
+  var fallbackSubmitLogs = window._frameworkLog.slice(logCountBeforeFallbackSubmit)
 
   return {
     log: window._frameworkLog.slice(),
     hasFigure: !!document.querySelector('[data-figure-state], svg'),
     hasChoice: !!document.querySelector('.aic-choice-option, [data-value="A"]'),
     bodyText: document.body.innerText,
-    recognitionCardCountBeforeClear: recognitionCards.length,
-    recognitionText: recognitionCard && recognitionCard.textContent,
-    recognitionHasLatex: !!(recognitionCard && recognitionCard.querySelector('.katex')),
-    recognitionCardIsFirst: cardIsFirst,
-    recognitionCardInLeftScroll: cardInLeftScroll,
-    recognitionLogs: logAfterRecognition,
-    recognitionCardCountAfterClear: document.querySelectorAll('.cc-recognition-result').length
+    photoCardCount: photoCards.length,
+    photoText: photoCard && photoCard.textContent,
+    photoHasLatex: !!(photoCard && photoCard.querySelector('.katex')),
+    photoCardIsFirst: cardIsFirst,
+    photoCardInLeftScroll: cardInLeftScroll,
+    photoLogs: logAfterPhotoResult,
+    fallbackSubmitLogs: fallbackSubmitLogs
   }
 })
 
 await browser.close()
 
 if (errors.length) throw new Error(`Page errors:\n${errors.join('\n')}`)
-if (networkRequests.length) throw new Error(`Unexpected network requests:\n${networkRequests.join('\n')}`)
+const unexpectedRequests = networkRequests.filter(
+  (url) => !url.startsWith('https://cdn.jsdmirror.com/npm/mathlive@0.110.0/')
+)
+if (unexpectedRequests.length) throw new Error(`Unexpected network requests:\n${unexpectedRequests.join('\n')}`)
 if (!result.log.some((item) => item.type === 'step_ok')) throw new Error('Start action did not emit step_ok.')
 if (!result.log.some((item) => item.type === 'side_effect_ok')) throw new Error('Side effect did not emit side_effect_ok.')
 if (!result.hasFigure) throw new Error('Synthetic Figure was not mounted.')
 if (!result.hasChoice) throw new Error('Synthetic choice was not rendered.')
 if (!result.bodyText.includes('合成内容 A')) throw new Error('Synthetic text was not rendered.')
-if (result.recognitionCardCountBeforeClear !== 1) {
-  throw new Error('Recognition result must replace the existing card.')
+if (result.photoCardCount !== 1) {
+  throw new Error('Photo answer action must mount one answer card.')
 }
-if (!result.recognitionText.includes('更新结果')) throw new Error('Recognition result did not render text.')
-if (!result.recognitionHasLatex) throw new Error('Recognition result did not render KaTeX.')
-if (!result.recognitionCardIsFirst) throw new Error('Recognition result is not at the target scroll area top.')
-if (!result.recognitionCardInLeftScroll) {
-  throw new Error('Recognition result must mount in left explanation scroll (.course-scroll-left).')
+if (!result.photoText.includes('识别到')) throw new Error('Photo result did not render text.')
+if (!result.photoHasLatex) throw new Error('Photo result did not render KaTeX.')
+if (!result.photoCardIsFirst) throw new Error('Photo result is not at the target scroll area top.')
+if (!result.photoCardInLeftScroll) {
+  throw new Error('Photo answer must mount in the calculation left explanation scroll.')
 }
-if (!result.recognitionLogs.some((item) => item.type === 'answer_result_shown')) {
-  throw new Error('Answer result did not emit answer_result_shown.')
+if (!result.photoLogs.some((item) =>
+  item.type === 'user_submitted' &&
+  item.kind === 'course_photo' &&
+  Object.keys(item).sort().join(',') === 'kind,type'
+)) {
+  throw new Error('Photo button did not emit course_photo.')
 }
-if (result.recognitionLogs.some((item) => item.type === 'step_ok' || item.type === 'user_submitted')) {
-  throw new Error('Recognition result must not advance a step or submit an answer.')
+if (!result.photoLogs.some((item) => item.type === 'answer_result_shown')) {
+  throw new Error('Photo result did not emit answer_result_shown.')
 }
-if (result.recognitionCardCountAfterClear !== 0) throw new Error('Recognition result clear failed.')
+if (result.photoLogs.some((item) => item.type === 'step_ok')) {
+  throw new Error('Photo result must not advance a step.')
+}
+if (!result.fallbackSubmitLogs.some((item) =>
+  item.type === 'user_submitted' &&
+  item.kind === 'course_choice' &&
+  item.value === 'A' &&
+  Object.keys(item).sort().join(',') === 'kind,type,value'
+)) {
+  throw new Error('Fallback interaction submit did not use the normalized protocol kind.')
+}
 
 console.log('Browser smoke test passed.')

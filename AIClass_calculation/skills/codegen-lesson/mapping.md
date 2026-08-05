@@ -85,21 +85,23 @@ window.__lessonRegisterModule({
 
 - `quickQA[]` 不属于 `steps[]`；codegen 按例题前缀生成打开/出题/揭晓
 
-## Agent 作答结果回显
+## 练习题拍照作答
 
-课程模块不生成手写板或作答结果 `push`。练习题入口 action 已执行、目标容器创建后，
-宿主 Agent 完成外部手写板/OCR，再向 iframe 发送：
+课程模块不生成拍照作答 `push`。生成器为每个练习题自动追加
+`{actionPrefix}_作答_拍照`，并在 action catalog 中排在该题 `{actionPrefix}_开始` 之后、
+首个教学 sideEffect 之前。宿主先派发此 action，课件才显示左栏“作答结果 / 拍照上传”组件。
+
+点击上传时课件严格上报：
 
 ```js
-{
-  action: '作答结果_回显',
-  params: {
-    content: '识别到：$x=3$，验算：$$2x+1=7$$',
-    targetAction: '{该练习题入口 action}'
-  }
-}
+{ type: 'user_submitted', kind: 'course_photo' }
 ```
 
-`content` 是文字和 `$...$` / `$$...$$` LaTeX 的混合内容。它仅在该题左栏正文讲解流顶部
-回显，随后随讲解推进被自动滚动顶出；不参与 `user_submitted`、前端判题或 action 推进。需要移除时发送
-`作答结果_清除` 并传入同一 `targetAction`。
+OCR 由宿主负责，完成后向 iframe 回传：
+
+```js
+{ type: 'photo_result', value: '识别到：$x=3$，验算：$$2x+1=7$$' }
+```
+
+结果只回显到最近一次拍照 action 对应练习题的 `top-split` 左栏，由 KaTeX 渲染；
+它不判题、不提交、不推进教学步骤。挂载成功后课件回传 `answer_result_shown`。

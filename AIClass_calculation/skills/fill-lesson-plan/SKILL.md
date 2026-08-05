@@ -34,7 +34,7 @@ disable-model-invocation: true
 4. **要点**：`_要点_起` 只推【要点】section；`_要点_条*` retainPush 累加 1–2 条 `calc-key-list`（合并 read-problem + entry-point 结论）
 5. **详解_起**：**仅** right `calc-key-pin`（+ 可选 `calc-key-tex`）；**无 retainPush**
 6. **详解步**：每步 `calc-solve-note` + `calc-solve-step`（`tex` 完整一行，勿 `\\` 换行）；**禁止**首步再推【详解】section；retainPush 含详解_起 id
-7. **答案步**：`calc-answer calc-answer--final`；closing.recap 口播
+7. **答案步**：`calc-answer calc-answer--final`；closing.recap 口播；填空沿用 LaTeX 答案，由运行时 MathLive 科学键盘输入
 8. 顶层 `layout: "top-split"`；例题 `quickQA[]` 3–5，`quickQALayout: "above-body"`
 9. 写 `plan.json` → `npm run plan:check`
 

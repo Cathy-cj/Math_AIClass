@@ -368,6 +368,17 @@ function generatedModule(plan, problem) {
     if (step.push && step.push.length) item.push = generatedPush(step.push, plan.id)
     return item
   })
+  if (plan.moduleType === 'practice') {
+    sideEffects.unshift({
+      id: `${plan.id}_photo_answer`,
+      action: `${problem.actionPrefix}_作答_拍照`,
+      kind: 'practice',
+      containerIdx: 0,
+      anchorStepId: `${plan.id}_${start.id}`,
+      photoAnswer: true,
+      description: '显示拍照作答区域'
+    })
+  }
   const quickQA = (plan.quickQA || []).map((item, index) => {
     const suffix = index ? String(index + 1) : ''
     return {
@@ -420,6 +431,16 @@ function actionCatalog(plan, module) {
     params: [],
     description: (step.agent && step.agent.description) || step.description || ''
   }))
+  for (const effect of module.sideEffects || []) {
+    if (effect.photoAnswer && !entries.some((item) => item.name === effect.action)) {
+      const startIndex = entries.findIndex((item) => item.name === plan.steps[0].action)
+      entries.splice(startIndex + 1, 0, {
+        name: effect.action,
+        params: [],
+        description: effect.description || '显示拍照作答区域'
+      })
+    }
+  }
   for (const qa of module.quickQA || []) {
     for (const [name, description] of [
       [qa.openAction, '打开快问快答'],

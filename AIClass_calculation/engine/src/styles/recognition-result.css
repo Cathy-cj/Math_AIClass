@@ -1,26 +1,47 @@
-.cc-recognition-result {
-  margin: 0 0 var(--lf-block-gap, 16px);
-  padding: 14px 16px;
+.cc-photo-answer {
+  margin: 20px 0 var(--lf-block-gap, 16px);
+  padding: 18px 20px;
   border: 1px solid #b9d7f5;
-  border-radius: 12px;
-  background: #f5faff;
+  border-radius: 14px;
+  background: #f4f9ff;
   color: var(--cc-ink, var(--lf-ink));
 }
 
-.cc-recognition-result-title {
-  margin-bottom: 8px;
+.cc-photo-answer-title {
+  margin-bottom: 14px;
   color: #175ea8;
-  font-size: 0.82em;
+  font-size: 1.05em;
   font-weight: 700;
 }
 
-.cc-recognition-result-content {
+.cc-photo-answer-content {
   overflow-x: auto;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+  min-height: 42px;
 }
 
-.cc-recognition-result-content .katex-display {
+.cc-photo-answer-button {
+  display: block;
+  min-width: 152px;
+  margin: 0 auto;
+  padding: 10px 20px;
+  border: 1px dashed #9ec8f1;
+  border-radius: 10px;
+  background: #fff;
+  color: #2471bd;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.cc-photo-answer-button:hover,
+.cc-photo-answer-button:focus-visible {
+  border-style: solid;
+  background: #eaf4ff;
+}
+
+.cc-photo-answer-content .katex-display {
   margin: 0.65em 0;
   overflow-x: auto;
   overflow-y: hidden;

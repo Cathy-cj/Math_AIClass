@@ -63,19 +63,6 @@
     return null
   }
 
-  var RECOGNITION_RESULT_RUNTIME_ACTIONS = [
-    {
-      name: '作答结果_回显',
-      params: ['content', 'targetAction'],
-      description: '在目标练习题左栏正文讲解上方回显 Agent 返回的文字与 LaTeX；不判题、不提交、不推进步骤'
-    },
-    {
-      name: '作答结果_清除',
-      params: ['targetAction'],
-      description: '清除目标练习题左栏正文讲解上方的作答结果'
-    }
-  ]
-
   function isInterleavedContainer(containerRecord) {
     var container = containerRecord && containerRecord.container
     return !!(container && container.guidanceLayout === 'interleaved')
@@ -132,35 +119,23 @@
       document.getElementById('course-stack-stage') ||
       document.querySelector('.lf-stage')
     opts.pageEl = containerRecord.el
-    var stackScroll = opts.alignStart && window.AIClassContainerHost &&
-      typeof AIClassContainerHost.isStackMode === 'function' &&
-      AIClassContainerHost.isStackMode()
-    if (!stackScroll) {
-      var container = containerRecord.container
-      if (container && typeof container.getFollowScrollEl === 'function') {
-        var inner = container.getFollowScrollEl()
-        if (anchorEl && anchorEl.closest) {
-          if (container.scrollLeftEl && container.scrollLeftEl.contains(anchorEl)) {
-            inner = container.scrollLeftEl
-          } else if (container.scrollRightEl && container.scrollRightEl.contains(anchorEl)) {
-            inner = container.scrollRightEl
-          }
-        }
-        if (inner) {
-          opts.scrollEl = inner
-          opts.layoutScrollEl = inner
+    var container = containerRecord.container
+    if (container && typeof container.getFollowScrollEl === 'function') {
+      var inner = container.getFollowScrollEl()
+      // top-split：跟滚落在实际新增内容所在分栏（左算式 / 右要点）
+      if (anchorEl && anchorEl.closest) {
+        if (container.scrollLeftEl && container.scrollLeftEl.contains(anchorEl)) {
+          inner = container.scrollLeftEl
+        } else if (container.scrollRightEl && container.scrollRightEl.contains(anchorEl)) {
+          inner = container.scrollRightEl
         }
       }
-    } else {
-      opts.stage = document.getElementById('course-stack-stage') ||
-        document.querySelector('.lf-stage')
-      anchorEl = containerRecord.el
-      var stackContainer = containerRecord.container
-      if (stackContainer && typeof stackContainer.getFollowScrollEl === 'function') {
-        var layoutScroll = stackContainer.getFollowScrollEl()
-        if (layoutScroll) opts.layoutScrollEl = layoutScroll
+      if (inner) {
+        opts.scrollEl = inner
+        opts.layoutScrollEl = inner
       }
     }
+    // 两层跟滚由 AIClassScrollFollow 自行判断：外层先把目标页滚进视窗，再内层跟到最新
     AIClassScrollFollow.follow(anchorEl || containerRecord.el, opts)
   }
 
@@ -181,6 +156,7 @@
     this.instanceCounter = 0
     this.feynmanOpenId = null
     this.conceptSheetOpenId = null
+    this.photoAnswerTarget = null
   }
 
   CourseScheduler.prototype._moduleState = function (moduleId) {
@@ -363,7 +339,7 @@
       style: containerDef.style || {},
       figure: containerDef.figure || null,
       textAccumulate: containerDef.textAccumulate === true,
-      guidanceLayout: containerDef.guidanceLayout || 'stacked',
+      guidanceLayout: containerDef.guidanceLayout || 'interleaved',
       description: containerDef.description || containerDef.title,
       guidanceChain: containerDef.guidanceChain || null,
       head: containerDef.label || containerDef.head || null,
@@ -813,15 +789,6 @@
       })
     }
 
-    RECOGNITION_RESULT_RUNTIME_ACTIONS.forEach(function (item) {
-      actions.push({
-        name: item.name,
-        params: item.params.slice(),
-        description: item.description,
-        recognitionResultRuntime: true
-      })
-    })
-
     ;([{ name: '快问快答_关闭', description: '收起当前快问快答气泡' }]).forEach(function (item) {
       actions.push({ name: item.name, description: item.description || '' })
     })
@@ -904,124 +871,89 @@
     this.registry.modules.forEach(function (mod) {
       if (mod.mount === 'feynman-overlay') return
 
-      var containers = mod.containers || []
-      var sideEffects = mod.sideEffects || []
-      // 多 container（例/练）时按 head 拆成课纲分组，sideEffect 跟回对应 containerIdx
-      var groups = containers.length
-        ? containers.map(function (c, cIdx) {
-            return {
-              title: c.head || c.label || c.title || mod.title,
-              description: c.description || mod.title,
-              containerId: c.id || null,
-              containerIdx: cIdx,
-              container: c
-            }
-          })
-        : [{
-            title: mod.title,
-            description: mod.title,
-            containerId: null,
-            containerIdx: 0,
-            container: null
-          }]
-
-      groups.forEach(function (group, gIdx) {
-        var steps = []
-        var c = group.container
-        if (c && c.steps) {
-          c.steps.forEach(function (s) {
-            var entry = {
-              name: s.action,
-              stepId: s.id,
-              kind: s.kind,
-              moduleId: mod.id,
-              description: s.description || '',
-              containerIdx: group.containerIdx
-            }
-            actions.push(entry)
-            steps.push({
-              stepId: s.id,
-              action: s.action,
-              description: s.description || '',
-              kind: s.kind,
-              containerIdx: group.containerIdx
-            })
-          })
-        }
-        sideEffects.forEach(function (fx) {
-          var fxIdx = fx.containerIdx != null ? fx.containerIdx : 0
-          if (fxIdx !== group.containerIdx) return
-          var fxEntry = {
-            name: fx.action,
-            stepId: fx.id || fx.action,
-            kind: fx.kind || 'exercise',
+      var steps = []
+      mod.containers.forEach(function (c) {
+        c.steps.forEach(function (s) {
+          var entry = {
+            name: s.action,
+            stepId: s.id,
+            kind: s.kind,
             moduleId: mod.id,
-            description: fx.description || '',
-            sideEffect: true,
-            containerIdx: fxIdx
+            description: s.description || ''
           }
-          actions.push(fxEntry)
+          actions.push(entry)
           steps.push({
-            stepId: fx.id || fx.action,
-            action: fx.action,
-            description: fx.description || '',
-            kind: fx.kind || 'exercise',
-            sideEffect: true,
-            containerIdx: fxIdx
+            stepId: s.id,
+            action: s.action,
+            description: s.description || '',
+            kind: s.kind
           })
         })
-
-        // quickQA 挂在第一组（通常为例题）
-        if (gIdx === 0) {
-          var quickActions = {}
-          ;(mod.quickQA || []).forEach(function (qa, index) {
-            ;[
-              {
-                name: qa.openAction,
-                stepId: '快问快答·打开',
-                description: '打开快问快答'
-              },
-              {
-                name: qa.questionAction,
-                stepId: '快问快答·第' + (index + 1) + '题',
-                description: qa.question || ''
-              },
-              {
-                name: qa.answerAction,
-                stepId: '快问快答·第' + (index + 1) + '题答案',
-                description: qa.answer || ''
-              }
-            ].forEach(function (entry) {
-              if (!entry.name || quickActions[entry.name]) return
-              quickActions[entry.name] = true
-              var qaEntry = {
-                name: entry.name,
-                stepId: entry.stepId,
-                kind: 'quickQA',
-                moduleId: mod.id,
-                description: entry.description,
-                quickQA: true
-              }
-              actions.push(qaEntry)
-              steps.push({
-                stepId: entry.stepId,
-                action: entry.name,
-                description: entry.description,
-                kind: 'quickQA',
-                quickQA: true
-              })
-            })
-          })
-        }
-
-        allModules.push({
+      })
+      ;(mod.sideEffects || []).forEach(function (fx) {
+        var fxEntry = {
+          name: fx.action,
+          stepId: fx.id || fx.action,
+          kind: fx.kind || 'exercise',
           moduleId: mod.id,
-          title: group.title,
-          description: group.description,
-          containerId: group.containerId,
-          containerIdx: group.containerIdx,
-          steps: steps
+          description: fx.description || '',
+          sideEffect: true
+        }
+        actions.push(fxEntry)
+        steps.push({
+          stepId: fx.id || fx.action,
+          action: fx.action,
+          description: fx.description || '',
+          kind: fx.kind || 'exercise',
+          sideEffect: true
         })
+      })
+
+      var quickActions = {}
+      ;(mod.quickQA || []).forEach(function (qa, index) {
+        ;[
+          {
+            name: qa.openAction,
+            stepId: '快问快答·打开',
+            description: '打开快问快答'
+          },
+          {
+            name: qa.questionAction,
+            stepId: '快问快答·第' + (index + 1) + '题',
+            description: qa.question || ''
+          },
+          {
+            name: qa.answerAction,
+            stepId: '快问快答·第' + (index + 1) + '题答案',
+            description: qa.answer || ''
+          }
+        ].forEach(function (entry) {
+          if (!entry.name || quickActions[entry.name]) return
+          quickActions[entry.name] = true
+          var qaEntry = {
+            name: entry.name,
+            stepId: entry.stepId,
+            kind: 'quickQA',
+            moduleId: mod.id,
+            description: entry.description,
+            quickQA: true
+          }
+          actions.push(qaEntry)
+          steps.push({
+            stepId: entry.stepId,
+            action: entry.name,
+            description: entry.description,
+            kind: 'quickQA',
+            quickQA: true
+          })
+        })
+      })
+
+      allModules.push({
+        moduleId: mod.id,
+        title: mod.title,
+        description: (mod.containers[0] && mod.containers[0].description) || mod.title,
+        steps: steps
       })
     })
 
@@ -1033,15 +965,6 @@
         conceptSheet: true
       })
     }
-
-    RECOGNITION_RESULT_RUNTIME_ACTIONS.forEach(function (item) {
-      actions.push({
-        name: item.name,
-        description: item.description,
-        params: item.params.slice(),
-        recognitionResultRuntime: true
-      })
-    })
 
     ;([{ name: '快问快答_关闭', description: '收起当前快问快答气泡' }]).forEach(function (item) {
       actions.push({
@@ -1075,6 +998,7 @@
     this.checkpoint = null
     this.pointer = null
     this.instanceCounter = 0
+    this.photoAnswerTarget = null
     this.host.reset()
     this.index.reset()
     if (window.AIClassSceneBackground) {
@@ -1345,6 +1269,7 @@
     if (!window.AIClassQuickQA || !window.AIClassQuickQA.isOpen()) {
       return this._fail('QA_NOT_OPEN', '快问快答未开启', {})
     }
+    var qaId = (window.AIClassQuickQA.currentId && window.AIClassQuickQA.currentId()) || null
     window.AIClassQuickQA.hide()
     this.log.post({
       type: 'quick_qa_hidden',
@@ -1354,99 +1279,85 @@
     return { ok: true, qaId: qaId }
   }
 
-  CourseScheduler.prototype._resolveRecognitionResultContainer = function (targetAction) {
-    var meta = null
-    var record = null
-
-    if (targetAction != null && targetAction !== '') {
-      meta = this.router.resolveAction(targetAction)
-      if (!meta) {
-        return {
-          code: 'INVALID_TARGET_ACTION',
-          message: '未找到作答结果目标 action: ' + targetAction
-        }
-      }
-      record = this.host.get(meta.moduleId, meta.containerIdx)
-      if (!record) {
-        return {
-          code: 'CONTAINER_NOT_READY',
-          message: '目标练习题容器尚未创建',
-          meta: meta
-        }
-      }
-      return { record: record, meta: meta }
-    }
-
-    if (this.pointer) {
-      record = this.host.get(this.pointer.moduleId, this.pointer.containerIdx)
-      meta = this.router.resolveStepId(this.pointer.stepId)
-    }
-    if (!record && this.currentModuleId) {
-      for (var idx = 9; idx >= 0; idx--) {
-        record = this.host.get(this.currentModuleId, idx)
-        if (record) break
-      }
-    }
-    if (!record) {
-      return {
-        code: 'CONTAINER_NOT_READY',
-        message: '当前没有可回显作答结果的课件容器'
-      }
-    }
-    return { record: record, meta: meta }
-  }
-
-  CourseScheduler.prototype.showRecognitionResult = function (params) {
-    params = params || {}
-    if (params.content == null || String(params.content).trim() === '') {
-      return this._fail('INVALID_PARAMS', '作答结果_回显 需要非空 params.content', {
-        receivedAction: '作答结果_回显'
+  CourseScheduler.prototype.showPhotoAnswer = function (actionName) {
+    var meta = this.router.resolveAction(actionName)
+    if (!meta || !meta.photoAnswer) {
+      return this._fail('INVALID_PHOTO_ACTION', '非拍照作答 action: ' + actionName, {
+        receivedAction: actionName
       })
     }
-    var target = this._resolveRecognitionResultContainer(params.targetAction)
-    if (!target.record) {
-      return this._fail(target.code, target.message, {
-        receivedAction: '作答结果_回显',
-        targetAction: params.targetAction || null,
-        moduleId: target.meta && target.meta.moduleId,
-        containerIdx: target.meta && target.meta.containerIdx
-      }, '请先发送目标练习题的入口 action')
+    if (this.currentModuleId !== meta.moduleId) {
+      return this._fail('WRONG_MODULE', '拍照作答与当前练习题不一致', {
+        receivedAction: actionName,
+        currentModuleId: this.currentModuleId,
+        moduleId: meta.moduleId
+      })
     }
-    var card = target.record.container.showRecognitionResult(String(params.content))
+    if (meta.anchorStepId && !this.executedStepIds[meta.anchorStepId]) {
+      return this._fail('ANCHOR_NOT_READY', '练习题尚未显示，不能拍照作答', {
+        receivedAction: actionName,
+        expectedAction: this._actionForStepId(meta.anchorStepId)
+      })
+    }
+    var record = this.host.get(meta.moduleId, meta.containerIdx)
+    if (!record) {
+      return this._fail('CONTAINER_NOT_READY', '练习题容器尚未创建', {
+        receivedAction: actionName,
+        moduleId: meta.moduleId,
+        containerIdx: meta.containerIdx
+      })
+    }
+    var card = record.container.showPhotoAnswer(function () {
+      if (window.AIClassCoursewareSubmit) {
+        AIClassCoursewareSubmit.requestPhoto()
+      }
+    })
     if (!card) {
-      return this._fail('RECOGNITION_RESULT_MOUNT_FAILED', '作答结果无法挂载到目标容器', {
-        receivedAction: '作答结果_回显',
-        targetAction: params.targetAction || null
+      return this._fail('PHOTO_ANSWER_MOUNT_FAILED', '拍照作答区域无法挂载', {
+        receivedAction: actionName
+      })
+    }
+    this.photoAnswerTarget = {
+      action: actionName,
+      moduleId: meta.moduleId,
+      containerIdx: meta.containerIdx
+    }
+    this.log.post({
+      type: 'side_effect_ok',
+      status: 'ok',
+      action: actionName,
+      photoAnswer: true
+    })
+    return { ok: true, action: actionName }
+  }
+
+  CourseScheduler.prototype.showPhotoResult = function (value) {
+    if (value == null) {
+      return this._fail('INVALID_PARAMS', 'photo_result 需要 value', {
+        receivedType: 'photo_result'
+      })
+    }
+    var target = this.photoAnswerTarget
+    var record = target && this.host.get(target.moduleId, target.containerIdx)
+    if (!record) {
+      return this._fail('CONTAINER_NOT_READY', '当前没有可回显拍照结果的练习题容器', {
+        receivedType: 'photo_result'
+      })
+    }
+    if (!record.container.showPhotoResult(String(value))) {
+      return this._fail('PHOTO_RESULT_MOUNT_FAILED', '作答结果区域尚未显示', {
+        receivedType: 'photo_result',
+        action: target.action
       })
     }
     this.log.post({
       type: 'answer_result_shown',
       status: 'ok',
-      targetAction: params.targetAction || null,
-      moduleId: target.record.container.meta.moduleId,
-      containerIdx: target.record.container.meta.containerIdx
+      action: target.action,
+      moduleId: target.moduleId,
+      containerIdx: target.containerIdx
     })
-    return { ok: true, targetAction: params.targetAction || null }
-  }
-
-  CourseScheduler.prototype.clearRecognitionResult = function (params) {
-    params = params || {}
-    var target = this._resolveRecognitionResultContainer(params.targetAction)
-    if (!target.record) {
-      return this._fail(target.code, target.message, {
-        receivedAction: '作答结果_清除',
-        targetAction: params.targetAction || null
-      }, '请先发送目标练习题的入口 action')
-    }
-    target.record.container.clearRecognitionResult()
-    this.log.post({
-      type: 'answer_result_cleared',
-      status: 'ok',
-      targetAction: params.targetAction || null,
-      moduleId: target.record.container.meta.moduleId,
-      containerIdx: target.record.container.meta.containerIdx
-    })
-    return { ok: true, targetAction: params.targetAction || null }
+    return { ok: true, action: target.action }
   }
 
   CourseScheduler.prototype.dispatch = function (actionName, params) {
@@ -1473,9 +1384,6 @@
       this.log.post({ type: 'course_reset', status: 'ok' })
       return { ok: true }
     }
-    if (actionName === '作答结果_回显') return this.showRecognitionResult(params)
-    if (actionName === '作答结果_清除') return this.clearRecognitionResult(params)
-
     var feyResolved = this._resolveFeynmanAction(actionName)
     if (feyResolved) {
       if (feyResolved.type === 'enter') {
@@ -1507,6 +1415,7 @@
       if (qaMeta.qaType === 'answer') return this.showQuickQAAnswer(qaMeta)
       if (qaMeta.qaType === 'close') return this.dismissQuickQA()
     }
+    if (qaMeta && qaMeta.photoAnswer) return this.showPhotoAnswer(actionName)
 
     return this.runStep(actionName, params)
   }

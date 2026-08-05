@@ -91,6 +91,7 @@ function checkEngineManifest() {
   const matches = [...source.matchAll(/['"]([^'"]+\.js)['"]/g)].map((item) => item[1])
   assert(matches.length > 0, 'Engine manifest is empty.')
   for (const rel of matches) {
+    if (/^https?:\/\//i.test(rel)) continue
     const file = path.join(root, 'src', rel)
     assert(fs.existsSync(file), `Engine manifest references missing file: ${rel}`)
     run(process.execPath, ['--check', file])
@@ -122,8 +123,10 @@ function checkSharedPresentationTheme() {
   )
   const presentation = fs.readFileSync(path.join(root, 'src', 'styles', 'course-presentation.css'), 'utf8')
   assert(
-    presentation.includes('.cc-guide-panel.cc-guide-panel--has-rail::before'),
-    'Shared theme missing guide rail styles.'
+    presentation.includes('.cc-guide-track') &&
+      presentation.includes('.cc-guide-dot') &&
+      presentation.includes('.cc-guide-stem'),
+    'Shared theme must bind guide dot/stem in .cc-guide-track.'
   )
   assert(
     presentation.includes('.cc-guide-slot'),
@@ -185,6 +188,22 @@ function checkReplaceKeyInPlace() {
     courseContainer.includes("'top-split'") && courseContainer.includes("'left-right'"),
     'CourseContainer LAYOUTS must allow top-split and left-right (not text-only only)'
   )
+  assert(
+    courseContainer.includes("return this.scrollLeftEl || this.scrollEl"),
+    'Photo answer must mount in the calculation top-split left scroll.'
+  )
+  const submit = fs.readFileSync(path.join(root, 'src', 'bridge', 'courseware-submit.js'), 'utf8')
+  const executionLog = fs.readFileSync(path.join(root, 'src', 'core', 'session', 'execution-log.js'), 'utf8')
+  assert(
+    submit.includes("course_photo") && submit.includes("course_choice") &&
+      !submit.includes("status: 'ok'"),
+    'Interaction submit must use normalized protocol kinds without status.'
+  )
+  assert(
+    executionLog.includes("payload && payload.type === 'user_submitted'") &&
+      !executionLog.includes("Object.assign({\n      source: boot.messageSource || 'aiclass-page'\n    }, payload)"),
+    'Execution log must not add source to user_submitted.'
+  )
 }
 
 function main() {
@@ -241,6 +260,11 @@ function main() {
       'utf8'
     )
     assert(practiceModule.includes('"label": "练"'), 'Generated practice label is not 练.')
+    assert(
+      practiceModule.includes('"action": "测试练_作答_拍照"') &&
+        practiceModule.includes('"photoAnswer": true'),
+      'Generated practice module misses photo answer action.'
+    )
     assert(homeworkModule.includes('"label": "作业"'), 'Generated homework label is not 作业.')
     const firstHash = hashTree(generated)
     run(process.execPath, ['tools/aiclass.mjs', 'lesson:generate', fixtureCourseId])
@@ -253,6 +277,14 @@ function main() {
     assert(catalog.some((item) => item.name === '测试_步骤01'), 'Generated catalog misses side effect.')
     assert(catalog.some((item) => item.name === '测试_快问快答_打开'), 'Generated catalog misses quickQA open action.')
     assert(catalog.some((item) => item.name === '测试_快问快答3_显示问题'), 'Generated catalog misses third quickQA question action.')
+    assert(catalog.some((item) => item.name === '测试练_作答_拍照'), 'Generated catalog misses photo answer action.')
+    assert(
+      catalog.findIndex((item) => item.name === '测试练_开始') <
+        catalog.findIndex((item) => item.name === '测试练_作答_拍照') &&
+      catalog.findIndex((item) => item.name === '测试练_作答_拍照') <
+        catalog.findIndex((item) => item.name === '测试练_步骤01'),
+      'Photo answer action must follow the practice start action.'
+    )
     assert(fs.existsSync(path.join(exported, 'debug', 'parent-shell', 'parent-shell.css')), 'Debug shell CSS missing.')
     assert(fs.existsSync(path.join(exported, 'debug', 'parent-shell', 'parent-shell.js')), 'Debug shell JS missing.')
 

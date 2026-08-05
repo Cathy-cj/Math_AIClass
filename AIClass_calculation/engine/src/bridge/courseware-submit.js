@@ -3,17 +3,24 @@
   if (window.AIClassCoursewareSubmit) return
 
   function postUserSubmitted(body) {
-    if (!body || body.value == null) return
+    if (!body || !body.kind) return
+    if (body.kind !== 'course_photo' && body.value == null) return
     if (window.AIClassExecutionLog && typeof AIClassExecutionLog.post === 'function') {
-      AIClassExecutionLog.post(Object.assign({ type: 'user_submitted', status: 'ok' }, body))
+      var payload = { type: 'user_submitted', kind: body.kind }
+      if (body.kind !== 'course_photo') payload.value = String(body.value)
+      AIClassExecutionLog.post(payload)
     }
   }
 
-  function resolveAction(envelope, block) {
-    if (block && block.logAction) return block.logAction
-    if (envelope && envelope.context && envelope.context.action) return envelope.context.action
-    if (block && block.id) return block.id
-    return null
+  function protocolKind(kind) {
+    var map = {
+      choice: 'course_choice',
+      fill: 'course_fill',
+      matching: 'course_fill',
+      oral: 'voice',
+      photo: 'course_photo'
+    }
+    return map[kind] || kind
   }
 
   function formatValue(kind, envelope, rawValue, block) {
@@ -46,17 +53,10 @@
 
   function buildUserSubmitted(kind, envelope, rawValue, block) {
     envelope = envelope || {}
-    var body = {
-      kind: kind,
-      action: resolveAction(envelope, block),
+    return {
+      kind: protocolKind(kind),
       value: formatValue(kind, envelope, rawValue, block)
     }
-    if (envelope.context && Object.keys(envelope.context).length) {
-      body.context = envelope.context
-    }
-    if (envelope.question) body.question = envelope.question
-    if (envelope.response) body.response = envelope.response
-    return body
   }
 
   function submit(kind, envelope, rawValue, block) {
@@ -76,6 +76,9 @@
     postUserSubmitted: postUserSubmitted,
     buildUserSubmitted: buildUserSubmitted,
     submitInteraction: submit,
+    requestPhoto: function () {
+      postUserSubmitted({ kind: 'course_photo' })
+    },
     fromFillValue: fromFillValue,
     submitSingleChoice: function (payload, rawValue, block) {
       submit('choice', payload, rawValue, block)

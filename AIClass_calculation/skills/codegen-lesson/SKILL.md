@@ -27,7 +27,7 @@ disable-model-invocation: true
 ## 步骤
 
 1. 读 `plan.json`：锁定全部 `steps[].action`、`push`（`region`/`class`）、`retainPush` 需求；例题读 `quickQA[]`
-2. 在 `courses/{courseId}/lesson/modules/` 生成 `XX-{id}.js`：`__lessonRegisterModule`，入口进 `containers[].steps`，其余进 `sideEffects`；**不生成** `_*-figure.js`
+2. 在 `courses/{courseId}/lesson/modules/` 生成 `XX-{id}.js`：`__lessonRegisterModule`，入口进 `containers[].steps`，其余进 `sideEffects`；练题自动生成 `{actionPrefix}_作答_拍照` 并紧跟开始 action；**不生成** `_*-figure.js`
 3. 容器：`layout: "top-split"`，`guidanceLayout: "stacked"`，`splitMinHeight: 420`；题干 `region:"top"`；要点/详解/答案按 calculation-marks
 4. 在 `course.json.authoring.problems` 登记 Plan
 5. 在 `engine/` 运行 `lesson:generate`
@@ -46,6 +46,7 @@ disable-model-invocation: true
 | 详解累加 | sideEffect `retainPush` 保右栏钉 + 左栏前序行 |
 | `agent.description` | sideEffect `description`（TTS） |
 | example `quickQA[]` | 绑定例题模块；自动生成打开/出题/揭晓 action |
+| practice 模块 | 自动生成拍照作答 action；按钮严格上报 `course_photo`，OCR 回传 `photo_result` |
 
 ## 禁止
 
