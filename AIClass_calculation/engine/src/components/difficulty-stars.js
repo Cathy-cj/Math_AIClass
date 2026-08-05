@@ -2,7 +2,9 @@
 ;(function () {
   var ns = window.AIClassComponent = window.AIClassComponent || {}
   var MAX_STARS = 8
-  var ASSET_BASE = 'src/assets/difficulty-stars/'
+  // 导出包会把运行时嵌套在 course/runtime/；复用启动时确定的 srcRoot。
+  var srcRoot = (window.__COURSE_BOOT && window.__COURSE_BOOT.srcRoot) || 'src'
+  var ASSET_BASE = srcRoot.replace(/\/+$/, '') + '/assets/difficulty-stars/'
 
   var STAR_IMAGES = {
     gold: ASSET_BASE + 'star-gold.png',
