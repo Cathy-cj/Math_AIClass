@@ -9,6 +9,7 @@
   }
 
   function enginePath(rel) {
+    if (/^https?:\/\//i.test(rel)) return rel
     return srcRoot + '/' + rel
   }
 

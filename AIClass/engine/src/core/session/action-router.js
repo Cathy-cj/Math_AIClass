@@ -50,7 +50,8 @@
           problemBrief: fx.problemBrief || null,
           retainPush: fx.retainPush || null,
           scroll: fx.scroll || null,
-          stemClass: fx.stemClass || null
+          stemClass: fx.stemClass || null,
+          photoAnswer: fx.photoAnswer === true
         }
         byAction[fx.action] = meta
       })

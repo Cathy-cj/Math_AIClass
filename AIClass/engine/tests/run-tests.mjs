@@ -91,6 +91,7 @@ function checkEngineManifest() {
   const matches = [...source.matchAll(/['"]([^'"]+\.js)['"]/g)].map((item) => item[1])
   assert(matches.length > 0, 'Engine manifest is empty.')
   for (const rel of matches) {
+    if (/^https?:\/\//i.test(rel)) continue
     const file = path.join(root, 'src', rel)
     assert(fs.existsSync(file), `Engine manifest references missing file: ${rel}`)
     run(process.execPath, ['--check', file])
@@ -157,6 +158,73 @@ function checkReplaceKeyInPlace() {
   )
 }
 
+function checkMathLiveKeyboard() {
+  for (const gone of [
+    path.join(root, 'src', 'components', 'fill-keyboard.js'),
+    path.join(root, 'src', 'components', 'math-keyboard.js'),
+    path.join(root, 'src', 'styles', 'math-keyboard.css')
+  ]) {
+    assert(!fs.existsSync(gone), `Legacy keyboard must be removed: ${path.basename(gone)}`)
+  }
+  const engineCss = fs.readFileSync(path.join(root, 'src', 'styles', 'engine.css'), 'utf8')
+  assert(engineCss.includes('mathlive-keyboard.css'), 'engine.css must import mathlive-keyboard.css')
+  assert(!engineCss.includes('math-keyboard.css'), 'engine.css must not import legacy math-keyboard.css')
+  const manifest = fs.readFileSync(path.join(root, 'src', 'boot', 'engine-manifest.js'), 'utf8')
+  assert(manifest.includes('components/mathlive.js'), 'engine manifest must load components/mathlive.js')
+  assert(
+    !manifest.includes('fill-keyboard.js') && !manifest.includes('math-keyboard.js'),
+    'engine manifest must not load legacy keyboards'
+  )
+  const mathlive = fs.readFileSync(path.join(root, 'src', 'components', 'mathlive.js'), 'utf8')
+  assert(mathlive.includes("'\\\\sqrt{#0}'"), 'Sqrt key must insert \\sqrt{#0}')
+  assert(!mathlive.includes('\\sqrt[#?]{#0}'), 'Sqrt key must not insert \\sqrt[#?]{#0}')
+  assert(
+    mathlive.includes('ns.syncMathKeyboard') && mathlive.includes('ns.resetMathKeyboard'),
+    'MathLive keyboard must expose syncMathKeyboard/resetMathKeyboard'
+  )
+  const container = fs.readFileSync(path.join(root, 'src', 'core', 'shell', 'course-container.js'), 'utf8')
+  assert(container.includes('syncMathKeyboard'), 'Container must sync the MathLive keyboard')
+  assert(!container.includes('syncFillKeyboardVisibility'), 'Container must not call the legacy fill keyboard')
+  const host = fs.readFileSync(path.join(root, 'src', 'core', 'shell', 'container-host.js'), 'utf8')
+  assert(host.includes('resetMathKeyboard'), 'Host reset must reset the MathLive keyboard')
+  assert(!host.includes('hideFloatingMathKeyboard'), 'Host must not call the legacy floating keyboard')
+  const fillWidget = fs.readFileSync(path.join(root, 'src', 'widgets', 'fill.js'), 'utf8')
+  assert(fillWidget.includes('createLatexMathfield'), 'Fill widget must use the MathLive mathfield')
+}
+
+function checkStrictSubmitProtocol() {
+  const submitText = fs.readFileSync(path.join(root, 'src', 'core', 'session', 'submit-text.js'), 'utf8')
+  assert(submitText.includes('function protocolKind'), 'submit-text must normalize kinds via protocolKind')
+  assert(
+    submitText.includes('kind: protocolKind(kind)'),
+    'submit-text fallback report must post the normalized protocol kind'
+  )
+  assert(
+    !submitText.includes("status: 'ok'"),
+    'submit-text fallback report must not add status/action fields'
+  )
+  const bridge = fs.readFileSync(path.join(root, 'src', 'bridge', 'courseware-submit.js'), 'utf8')
+  assert(bridge.includes('function protocolKind'), 'courseware-submit must normalize kinds via protocolKind')
+  assert(
+    bridge.includes("body.kind !== 'course_photo' && body.value == null"),
+    'Non-photo submissions without value must not be posted'
+  )
+  const log = fs.readFileSync(path.join(root, 'src', 'core', 'session', 'execution-log.js'), 'utf8')
+  assert(
+    log.includes("payload.type === 'user_submitted'"),
+    'execution-log must not add source to user_submitted envelopes'
+  )
+  const scheduler = fs.readFileSync(path.join(root, 'src', 'core', 'session', 'course-scheduler.js'), 'utf8')
+  assert(
+    !scheduler.includes('showRecognitionResult'),
+    'Legacy 作答结果 action handlers must be removed from the scheduler'
+  )
+  assert(
+    scheduler.includes('showPhotoAnswer') && scheduler.includes('showPhotoResult'),
+    'Scheduler must route photoAnswer actions and photo_result echo'
+  )
+}
+
 function checkFigureTextNormalize() {
   // package.json type:module 下 require 拿不到 module.exports，UMD 挂在 globalThis
   require(path.join(root, 'src', 'figures', 'jxg-kit-2d.js'))
@@ -196,6 +264,8 @@ function main() {
     checkReferenceBoundary()
     checkSharedPresentationTheme()
     checkReplaceKeyInPlace()
+    checkMathLiveKeyboard()
+    checkStrictSubmitProtocol()
     checkFigureTextNormalize()
     assert(fs.existsSync(path.join(root, 'vendor', 'katex', 'katex.min.js')), 'KaTeX vendor missing.')
     assert(
@@ -245,6 +315,11 @@ function main() {
       'utf8'
     )
     assert(practiceModule.includes('"label": "练"'), 'Generated practice label is not 练.')
+    assert(
+      practiceModule.includes('"action": "测试练_作答_拍照"') &&
+        practiceModule.includes('"photoAnswer": true'),
+      'Generated practice module misses photo answer action.'
+    )
     assert(homeworkModule.includes('"label": "作业"'), 'Generated homework label is not 作业.')
     const firstHash = hashTree(generated)
     run(process.execPath, ['tools/aiclass.mjs', 'lesson:generate', fixtureCourseId])
@@ -252,11 +327,19 @@ function main() {
 
     run(process.execPath, ['tools/aiclass.mjs', 'course:export', fixtureCourseId, '--zip'])
     const exported = path.join(root, 'dist', fixtureCourseId)
-    const catalog = JSON.parse(fs.readFileSync(path.join(exported, 'action-catalog.json'), 'utf8'))
+    const catalog = JSON.parse(fs.readFileSync(path.join(exported, 'course', 'runtime', 'action-catalog.json'), 'utf8'))
     assert(catalog.some((item) => item.name === '测试_开始'), 'Generated catalog misses start action.')
     assert(catalog.some((item) => item.name === '测试_步骤01'), 'Generated catalog misses side effect.')
     assert(catalog.some((item) => item.name === '测试_快问快答_打开'), 'Generated catalog misses quickQA open action.')
     assert(catalog.some((item) => item.name === '测试_快问快答3_显示问题'), 'Generated catalog misses third quickQA question action.')
+    assert(catalog.some((item) => item.name === '测试练_作答_拍照'), 'Generated catalog misses photo answer action.')
+    assert(
+      catalog.findIndex((item) => item.name === '测试练_开始') <
+        catalog.findIndex((item) => item.name === '测试练_作答_拍照') &&
+      catalog.findIndex((item) => item.name === '测试练_作答_拍照') <
+        catalog.findIndex((item) => item.name === '测试练_步骤01'),
+      'Photo answer action must follow the practice start action.'
+    )
     assert(fs.existsSync(path.join(exported, 'debug', 'parent-shell', 'parent-shell.css')), 'Debug shell CSS missing.')
     assert(fs.existsSync(path.join(exported, 'debug', 'parent-shell', 'parent-shell.js')), 'Debug shell JS missing.')
 
@@ -266,25 +349,27 @@ function main() {
     assert(!index.includes('__RUNTIME_CONFIG_JSON__'), 'Runtime config placeholder leaked into export.')
     assert(!index.includes('AICLASS_REFERENCE_ONLY'), 'Reference content leaked into export.')
     assert(!index.includes('REFERENCE_ONLY_DO_NOT_COPY'), 'Reference sentinel leaked into export.')
-    assert(fs.existsSync(path.join(exported, 'authoring-snapshot', 'problem-a', 'plan.json')), 'Authoring snapshot missing.')
-    assert(fs.existsSync(path.join(exported, 'framework-source', 'tools', 'aiclass.mjs')), 'Generator source missing.')
-    assert(fs.existsSync(path.join(exported, 'framework-source', 'schemas', 'course.schema.json')), 'Schema source missing.')
-    assert(fs.existsSync(path.join(exported, 'course-source', fixtureCourseId, 'course.json')), 'Course source missing.')
+    assert(fs.existsSync(path.join(exported, 'course', 'content', 'problem-a', 'plan.json')), 'Editable plan missing.')
+    const output = JSON.parse(fs.readFileSync(path.join(exported, 'course', 'content', 'problem-a', 'output.json'), 'utf8'))
+    assert(output.sourceOfTruth === 'plan.json', 'Editable source marker missing.')
+    assert(output.problemId === 'problem-a', 'Output problem index missing.')
+    assert(!fs.existsSync(path.join(exported, 'framework-source')), 'Generator source should not be exported.')
+    assert(!fs.existsSync(path.join(exported, 'course-source')), 'Duplicate course source should not be exported.')
+    assert(!fs.existsSync(path.join(exported, 'reports')), 'Duplicate reports should not be exported.')
     assert(fs.existsSync(path.join(root, 'artifacts', `${fixtureCourseId}-0.1.0-source.zip`)), 'Source ZIP missing.')
 
     for (const rel of walk(exported, (name) => /\.(?:js|json|html|css|md)$/.test(name))) {
-      if (rel.replaceAll('\\', '/') === 'framework-source/tools/aiclass.mjs') continue
       const text = fs.readFileSync(path.join(exported, rel), 'utf8')
       assert(!text.includes('REFERENCE_ONLY_DO_NOT_COPY'), `Reference sentinel leaked into ${rel}.`)
     }
 
     validateJson(
-      path.join(exported, 'course.lock.json'),
+      path.join(exported, 'course', 'course.lock.json'),
       path.join(root, 'schemas', 'course-lock.schema.json')
     )
     run(process.execPath, ['tests/course-id-from-md.mjs'])
     run(process.execPath, ['tests/pipeline-board.test.mjs'])
-    run(process.execPath, ['scripts/smoke-test.mjs'], { cwd: exported })
+    run(process.execPath, ['scripts/smoke-test.mjs'], { cwd: path.join(exported, 'course') })
     console.log('All framework tests passed.')
   } finally {
     fs.rmSync(courseDir, { recursive: true, force: true })

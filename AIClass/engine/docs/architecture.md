@@ -76,27 +76,37 @@ math_syllabus/lesson/{id}/plan.json
 
 `npm run vendor:sync` → `vendor/katex`、`vendor/jsxgraph`。导出时整包拷入 dist。
 
-## Agent 作答结果回显
+## iframe 通信与练题拍照作答
 
-手写板和 OCR 由宿主侧负责。Agent 拿到结果后，向课件 iframe 发送既有
-`{ action, params }` 消息：
+父页面向课件发送 `{ action, params }`；课件上报 `ready`、`step_ok`、
+`scheduler_error` 和 `user_submitted`。普通互动的 `kind` 经 `protocolKind` 归一：
+选择为 `course_choice`、填空/连线为 `course_fill`、口答为 `voice`，所有 `value`
+均为字符串；`user_submitted` 严格为 `{ type, kind, value? }` 裸对象，不得附加
+`source`、`status`、`action` 或上下文字段。
+
+每个 `moduleType: "practice"` 在生成时自动追加 `{actionPrefix}_作答_拍照`
+action，并紧跟入口 action。父页面在练习题入口 action 已执行后派发它，课件显示
+“作答结果 / 拍照上传”区域。用户点击按钮时，课件严格上行：
+
+```js
+{ type: 'user_submitted', kind: 'course_photo' }
+```
+
+手写板和 OCR 均由宿主侧负责。识别完成后，父页面直接向 iframe 回传：
 
 ```js
 iframe.contentWindow.postMessage({
-  action: '作答结果_回显',
-  params: {
-    content: '识别到：$x=3$，验算：$$2x+1=7$$',
-    targetAction: '练习题的入口 action'
-  }
+  type: 'photo_result',
+  value: '识别到：$x=3$，验算：$$2x+1=7$$'
 }, '*')
 ```
 
-`content` 可混排普通文字、`$...$` 行内公式与 `$$...$$` 独立公式。运行时先按
-纯文本插入，再由本地 KaTeX 渲染，不执行 HTML。`targetAction` 定位已经创建的
-练习题容器；结果固定显示在其**右边正文区域**（题干下方、讲解上方），随后随讲解
-推进被自动滚动顶出。同题的新结果替换旧结果，且不会触发
-判题、提交或教学步骤推进。课件会回传 `answer_result_shown`；需要移除结果时发送
-`作答结果_清除` 并携带同一 `targetAction`。
+`photo_result` 严格为 `{ type, value }`；`value` 可混排普通文字、`$...$` 行内
+公式与 `$$...$$` 独立公式，按纯文本插入、由本地 KaTeX 渲染，不执行 HTML。结果
+填入最近一次派发拍照 action 的练习题作答区域——left-right 容器固定放在
+`problemBrief` 下方、guide 上方。挂载成功后课件回传
+`{ type: 'answer_result_shown', status: 'ok' }`；结果不判题、不提交且不推进步骤；
+旧的作答结果 action 协议已移除。
 
 ## 相关文档
 

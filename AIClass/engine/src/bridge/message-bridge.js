@@ -37,6 +37,11 @@
     var data = event.data
     if (!data || !scheduler) return
 
+    if (data.type === 'photo_result') {
+      scheduler.showPhotoResult(data.value)
+      return
+    }
+
     if (data.action === 'help') {
       scheduler.dispatch('help', data.params || {})
       return

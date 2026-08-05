@@ -2,9 +2,11 @@
 ;(function () {
   function post(payload) {
     var boot = window.__COURSE_BOOT || {}
-    var envelope = Object.assign({
-      source: boot.messageSource || 'aiclass-page'
-    }, payload)
+    var envelope = payload && payload.type === 'user_submitted'
+      ? payload
+      : Object.assign({
+          source: boot.messageSource || 'aiclass-page'
+        }, payload)
     if (window.parent && window.parent !== window) {
       window.parent.postMessage(envelope, boot.targetOrigin || '*')
     }

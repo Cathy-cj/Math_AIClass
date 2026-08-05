@@ -15,6 +15,9 @@
       tex = '$' + tex + '$'
     }
     wrap.textContent = tex
+    if (/calc-eq(?:--stem|-index)?\b/.test(String(block.class || ''))) {
+      wrap.setAttribute('data-force-latex', '1')
+    }
     return wrap
   }
 

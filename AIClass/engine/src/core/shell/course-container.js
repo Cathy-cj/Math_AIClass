@@ -361,22 +361,27 @@
         self._updateGuideRailHeight()
       })
     }
+    if (self.scrollRightEl && self.scrollRightEl._overlayScrollbarApi &&
+        typeof self.scrollRightEl._overlayScrollbarApi.sync === 'function') {
+      self.scrollRightEl._overlayScrollbarApi.sync()
+    }
     return out
   }
 
-  CourseContainer.prototype._recognitionResultTarget = function () {
-    // left-right：右边正文栈（题干在 top，回显挂在正文流顶部、讲解之上）
+  CourseContainer.prototype._photoAnswerTarget = function () {
+    // left-right：右边正文栈（题干下方、讲解 guide 上方）
     if (this.layout === 'left-right') return this.scrollStackEl || this.scrollRightEl
     if (this.layout === 'top-split') return this.scrollRightEl || this.scrollEl
     return this.scrollEl
   }
 
-  CourseContainer.prototype._insertRecognitionResultCard = function (target, card) {
+  CourseContainer.prototype._insertPhotoAnswerCard = function (target, card) {
     if (!target || !card) return
     var brief = this.problemBriefEl
-    if (brief && brief.parentNode === target) {
-      if (brief.nextSibling) target.insertBefore(card, brief.nextSibling)
-      else target.appendChild(card)
+    if (brief && brief.parentNode) {
+      var briefParent = brief.parentNode
+      if (brief.nextSibling) briefParent.insertBefore(card, brief.nextSibling)
+      else briefParent.appendChild(card)
       return
     }
     var guide = target.querySelector && target.querySelector('.cc-guide-panel, .cc-guide-section')
@@ -384,25 +389,32 @@
       target.insertBefore(card, guide)
       return
     }
-    target.insertBefore(card, target.firstChild)
+    target.appendChild(card)
   }
 
-  CourseContainer.prototype.showRecognitionResult = function (content) {
-    var target = this._recognitionResultTarget()
-    if (!target || !window.AIClassRecognitionResult) return null
+  CourseContainer.prototype.showPhotoAnswer = function (onPhotoRequest) {
+    var target = this._photoAnswerTarget()
+    if (!target || !window.AIClassPhotoAnswer) return null
 
-    this.clearRecognitionResult()
-    var card = AIClassRecognitionResult.create(content)
-    this._insertRecognitionResultCard(target, card)
+    this.clearPhotoAnswer()
+    var card = AIClassPhotoAnswer.create(onPhotoRequest)
+    this._insertPhotoAnswerCard(target, card)
     var scrollEl = this.scrollRightEl || this.scrollEl || target
     if (scrollEl && scrollEl.scrollTop != null) scrollEl.scrollTop = 0
     return card
   }
 
-  CourseContainer.prototype.clearRecognitionResult = function () {
-    var target = this._recognitionResultTarget()
+  CourseContainer.prototype.showPhotoResult = function (content) {
+    var target = this._photoAnswerTarget()
+    if (!target || !window.AIClassPhotoAnswer) return false
+    var card = target.querySelector('.cc-photo-answer')
+    return !!(card && AIClassPhotoAnswer.showResult(card, content))
+  }
+
+  CourseContainer.prototype.clearPhotoAnswer = function () {
+    var target = this._photoAnswerTarget()
     if (!target || !target.querySelectorAll) return
-    target.querySelectorAll('.cc-recognition-result').forEach(function (node) {
+    target.querySelectorAll('.cc-photo-answer').forEach(function (node) {
       if (node.parentNode) node.parentNode.removeChild(node)
     })
   }
@@ -460,10 +472,14 @@
       var sid = block.getAttribute('data-step-id')
       var isActive = activeStepId != null && String(sid) === String(activeStepId)
       block.setAttribute('data-is-current-step', isActive ? 'true' : 'false')
+      ;(block.querySelectorAll ? block.querySelectorAll('.aic-button-submit') : []).forEach(function (button) {
+        button.hidden = !isActive
+        button.disabled = !isActive
+      })
     })
     this._syncChoiceBlocks(activeStepId)
-    if (window.AIClassComponent && typeof window.AIClassComponent.syncFillKeyboardVisibility === 'function') {
-      window.AIClassComponent.syncFillKeyboardVisibility()
+    if (window.AIClassComponent && typeof window.AIClassComponent.syncMathKeyboard === 'function') {
+      window.AIClassComponent.syncMathKeyboard()
     }
   }
 

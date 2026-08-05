@@ -83,6 +83,17 @@
     return String(value).trim()
   }
 
+  function protocolKind(kind) {
+    var map = {
+      choice: 'course_choice',
+      fill: 'course_fill',
+      matching: 'course_fill',
+      oral: 'voice',
+      photo: 'course_photo'
+    }
+    return map[kind] || kind
+  }
+
   function report(kind, value, block) {
     var api = window.AIClassCoursewareSubmit
     if (api && typeof api.submitInteraction === 'function') {
@@ -93,9 +104,7 @@
     if (window.AIClassExecutionLog && typeof AIClassExecutionLog.post === 'function') {
       AIClassExecutionLog.post({
         type: 'user_submitted',
-        status: 'ok',
-        kind: kind || null,
-        action: (block && (block.logAction || block.id)) || null,
+        kind: protocolKind(kind) || null,
         value: text
       })
     }
@@ -104,7 +113,6 @@
 
   function formatValueForKind(kind, value, block) {
     if (kind === 'choice') {
-      // 上报 value：仅学生所选选项值（不再「值｜文案」）
       var selected = value
       if (typeof selected === 'object' && selected != null && selected.option != null) {
         selected = selected.option

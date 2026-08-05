@@ -3,6 +3,8 @@ dist/
 artifacts/
 workspace.local.json
 .tmp-shots/
+tmp-*
+tmp_*
 *.log
 .DS_Store
 Thumbs.db

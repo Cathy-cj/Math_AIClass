@@ -328,6 +328,57 @@ body.is-resizing-log {
   line-height: 1.35;
 }
 
+.desc.is-editable {
+  cursor: text;
+  border-radius: 4px;
+  padding: 3px 4px;
+  margin: 0 -4px;
+}
+
+.desc.is-editable:hover {
+  color: var(--text);
+  background: #e0f2fe;
+}
+
+.desc.is-editing {
+  cursor: default;
+  background: #fff;
+}
+
+.desc-editor {
+  display: block;
+  width: 100%;
+  min-height: 76px;
+  resize: vertical;
+  padding: 6px;
+  border: 1px solid #93c5fd;
+  border-radius: 4px;
+  font: inherit;
+  line-height: 1.45;
+  color: var(--text);
+  background: #fff;
+}
+
+.desc-editor-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: 5px;
+}
+
+.desc-editor-hint {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.desc-editor-hint.is-warning { color: #b45309; }
+
+.desc-editor-actions .btn {
+  padding: 3px 8px;
+  font-size: 11px;
+}
+
 .stage {
   flex: 1;
   min-width: 0;

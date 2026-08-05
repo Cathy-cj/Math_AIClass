@@ -33,7 +33,7 @@ window.__lessonRegisterModule({
 - `plan.quickQA[]` 是**当前例题模块的独立顶部区**，不属于 `steps[]`、`sideEffects[]` 或课程的第三道 problem。
 - `quickQALayout: "above-body"` 时，运行时在例题 `.course-body` 前挂载单题快问区；每题动作顺序为打开 → 显示问题 → 显示答案。
 - 生成器按例题 `actionPrefix` 自动生成每题的三个 action；plan 中不手写这些 action。
-- 练题入口后的手写板继续使用系统 action `手写板_显示`，参数 `logAction` 为练题的入口 action。手写板不硬编码成 `push.type: "handwriting"`，提交后才继续练题的讲解步骤。
+- 练题模块生成时，会在 `{前缀}_开始` 后、首个讲解步骤前自动插入 `{前缀}_作答_拍照`。该动作只显示拍照作答区；不写入 plan，也不作为 `push`。
 
 ## sideEffect 一条
 
@@ -76,25 +76,18 @@ left-right 多环节使用 `interleaved`：每个 step 的 `group` 对应一个
 
 生成器只按 `guidanceChain + group` 路由；`phase` 和 stage slug 均为题内语义，不参与分支判断。`group: 0` 仅为开场且不显示环节。`problemBrief` 固定嵌入第一个“审题环节”槽位，不作为 push 或独立卡片。
 
-## Agent 作答结果回显
-
-课程模块不生成手写板或作答结果 `push`。练习题入口 action 已执行、目标容器创建后，
-宿主 Agent 完成外部手写板/OCR，再向 iframe 发送：
+## 练题拍照作答
 
 ```js
 {
-  action: '作答结果_回显',
-  params: {
-    content: '识别到：$x=3$，验算：$$2x+1=7$$',
-    targetAction: '{该练习题入口 action}'
-  }
+  type: 'photo_result',
+  value: '识别到：$x=3$，验算：$$2x+1=7$$'
 }
 ```
 
-`content` 是文字和 `$...$` / `$$...$$` LaTeX 的混合内容。它仅在该题**右边正文区域**
-（题干下方、讲解上方）回显，随后随讲解推进被自动滚动顶出；不参与 `user_submitted`、
-前端判题或 action 推进。需要移除时发送
-`作答结果_清除` 并传入同一 `targetAction`。
+- 拍照按钮上行严格为 `{ type: "user_submitted", kind: "course_photo" }`；无 `source`、`status`、action 或上下文字段。
+- OCR 内容支持 `$...$` / `$$...$$` LaTeX；在 left-right 图形仓中插入 `problemBrief` 下方、guide 上方，并回传 `answer_result_shown`。
+- `photo_result` 不判题、不提交、不推进教学步骤；旧 `作答结果_回显` / `作答结果_清除` 协议不再可用。
 
 ## figure
 

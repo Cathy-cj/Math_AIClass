@@ -35,7 +35,7 @@ disable-model-invocation: true
 7. **提取已知 / 列式计算**：亮标数据（`transition.phase` 变体）→ 逐段列式（`transition.compute` 变体）；**最后一步**除答案外必须兑现 `closing.recap`（星级拼装复盘）＋ `takeaway`（`closing.recap` / `closing.win` 变体）
 8. left-right 且有 `guidanceChain` 时，顶层写 `guidanceLayout: "interleaved"`；正文步骤 `group` 与动态环节序号一一对应
 9. **例题快问快答**：仅 `moduleType: "example"`，从 outline 的 `quickQASkeleton` 原样转写出独立顶层 `quickQA[]`（3–5 题），并写 `quickQALayout: "above-body"`。它**不属于** `steps[]` / `push`；不要手写打开、出题、揭晓 action，codegen 会按例题前缀生成。逐题核对是本题具体数据/关系/中间量，且答案唯一，禁止开放题。
-10. **练题先手写**：仅 `moduleType: "practice"`，入口步仍只放题干与开场口播；在 `moduleNote` 写明“入口后调用 `手写板_显示`，`logAction` 为本题入口 action；学生提交后进入审题讲解”。手写板是 runtime 系统动作，不写成 `push.type: "handwriting"`，也不增加独立讲解步骤。
+10. **练题先拍照**：仅 `moduleType: "practice"`，入口步仍只放题干与开场口播；不写拍照 action 或作答结果 `push`。codegen 自动在入口后插入拍照动作，宿主通过 `photo_result` 回传 OCR；结果显示后进入审题讲解。
 11. 每步填充 `action`、`figure.state`、`figure.note`、`push`、`agent.type`（explain/ask）、`agent.description`（**TTS 逐字稿**，契约见 [reference.md](../lesson-plan/reference.md)）、`moduleNote`
 12. 从 outline `teachingStages[]` 复制 `guidanceChain`：**仅 `{ title }`，不写 `desc`**（已废弃）；**禁止**在 step 上写 `guidanceDesc`
 13. 复制 `lessonContext`、`outlineId`；`source` 只写真实出处；写 `lesson/{id}/plan.json`
@@ -76,7 +76,7 @@ npm run plan:check
 - [ ] left-right 多环节使用 interleaved；group 0 可重复，正文完整覆盖 1..guidanceChain.length
 - [ ] 有左图变化的 step 含 `figure.actions[]`（非仅 note 一句话）
 - [ ] example 的 `quickQA[]` 为 3–5 道本题具体数据/关系题，均有唯一标准答案；不是开放题，且 `quickQALayout` 为 `above-body`
-- [ ] practice 的入口 `moduleNote` 已说明运行时手写板调用与提交后的讲解衔接；未把 runtime 手写板硬编码进 push
+- [ ] practice 未在 plan 中硬编码拍照 action 或作答结果 push；入口后由 codegen 自动插入拍照动作并衔接讲解
 - [ ] 各环节展开深度与其 `difficulty` 匹配（难段成倍展开、易段简短）；难点环节没有为压总步数而合并「为什么」；quickQA 仅 example
 - [ ] 无 banned 子串；问题步有 userResponse；compute 有 push
 - [ ] 含「体积 ⅓ / 同底同高」的互动步：左图是**体积份数**对比，未用 `heightRatio` 画「高度 1/3」

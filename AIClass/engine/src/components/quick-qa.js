@@ -4,6 +4,19 @@
   var currentQaEl = null
   var currentQaId = null
 
+  function setLatexText(el, text) {
+    if (!el) return
+    if (window.AIClassLatex && typeof window.AIClassLatex.setText === 'function') {
+      window.AIClassLatex.setText(el, text)
+      return
+    }
+    el.textContent = text == null ? '' : String(text)
+  }
+
+  function renderLatex(rootEl) {
+    if (window.AIClassLatex) window.AIClassLatex.render(rootEl)
+  }
+
   function mount(containerRecord) {
     destroy()
     var scrollMain = containerRecord.container.getFollowScrollEl()
@@ -112,7 +125,7 @@
           qEl.appendChild(document.createTextNode(part))
         })
       } else {
-        qEl.textContent = qaItem.question
+        setLatexText(qEl, qaItem.question)
       }
 
       // 答案（右半部分）
@@ -121,14 +134,14 @@
       if (qaItem.fillBlank) {
         aEl.dataset.fillBlank = 'true'
       }
-      aEl.textContent = qaItem.answer || ''
+      setLatexText(aEl, qaItem.answer || '')
 
       itemEl.appendChild(badgeEl)
       itemEl.appendChild(qEl)
       itemEl.appendChild(aEl)
 
       slot.appendChild(itemEl)
-      if (window.AIClassLatex) window.AIClassLatex.render(itemEl)
+      renderLatex(itemEl)
       currentQaId = qaItem.id
       return el
     }
@@ -153,7 +166,7 @@
         qEl.appendChild(document.createTextNode(part))
       })
     } else {
-      qEl.textContent = qaItem.question
+      setLatexText(qEl, qaItem.question)
     }
     itemEl.appendChild(qEl)
 
@@ -161,12 +174,12 @@
       var aEl = document.createElement('div')
       aEl.className = 'qa-bubble-answer'
       if (qaItem.answer !== undefined) aEl.classList.add('is-hidden')
-      aEl.textContent = qaItem.answer || ''
+      setLatexText(aEl, qaItem.answer || '')
       itemEl.appendChild(aEl)
     }
 
     itemsEl.appendChild(itemEl)
-    if (window.AIClassLatex) window.AIClassLatex.render(itemEl)
+    renderLatex(itemEl)
     currentQaId = qaItem.id
     return el
   }
@@ -204,17 +217,17 @@
     if (Array.isArray(answer)) {
       blanks.forEach(function (el, i) {
         if (i < answer.length) {
-          el.textContent = answer[i]
+          setLatexText(el, answer[i])
           el.classList.add('is-filled')
         }
       })
     } else {
       blanks.forEach(function (el) {
-        el.textContent = answer
+        setLatexText(el, answer)
         el.classList.add('is-filled')
       })
     }
-    if (window.AIClassLatex) window.AIClassLatex.render(container)
+    renderLatex(container)
   }
 
   function hide() {

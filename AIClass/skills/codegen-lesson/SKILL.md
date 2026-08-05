@@ -54,7 +54,7 @@ disable-model-invocation: true
 | `source` | 顶部来源，必须是真实出处 |
 | oral `attachStepId` | plan 内写题内短 id（如 `s09`）；codegen 自动前缀为 `{planId}_s09` 写入 sideEffect |
 | example `quickQA[]` | 绑定当前例题模块；自动生成打开 / 显示问题 / 显示答案 action，顶部布局为 `above-body` |
-| practice 入口手写说明 | 调试页列出 `手写板_显示`，使用练题入口 action 作为 `logAction`；不生成静态 handwriting push |
+| practice 入口 | codegen 自动在开始动作之后插入 `{actionPrefix}_作答_拍照`；不生成静态拍照或回显 push |
 
 右栏累积规则：
 
@@ -80,6 +80,6 @@ disable-model-invocation: true
 - [ ] working/compute 板书往下叠（不同 `replaceKey`）；同 key 仅出现在真·改写槽
 - [ ] 选择项及正文中的 LaTeX 已由 KaTeX 正常渲染，判题 value/answer 未改变
 - [ ] 例题快问快答为 3–5 道本题具体数据/关系题；debug 页能依次触发打开、出题、揭晓
-- [ ] 练题入口后能以该入口 action 作为 `logAction` 调用 `手写板_显示`，提交后可继续讲解
+- [ ] 练题 action catalog 中拍照动作紧跟开始动作；`photo_result` 可回显 LaTeX 并不推进步骤
 - [ ] 本地能从入口 action 走到答案
 - [ ] `courses/{courseId}/debug/index.html` 存在，且能跳转本课全部 action

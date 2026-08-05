@@ -234,6 +234,12 @@
 ] }
 ```
 
+#### 用户提交与练题拍照协议
+
+- 互动上行严格为裸对象（`protocolKind` 归一）：选择 `{ type: "user_submitted", kind: "course_choice", value }`，填空/连线为 `course_fill`，口答为 `voice`；不得带 `source`、`status`、action、题目或上下文字段。非拍照且无 `value` 时不上报。
+- 拍照请求严格为 `{ type: "user_submitted", kind: "course_photo" }`，无 `value`；宿主以 `{ type: "photo_result", value }` 回传 OCR 内容（同样不得附加其他字段）。
+- `practice` 的拍照动作由 codegen 自动生成并紧跟开始动作；plan 不写拍照 action、回显 action 或清除 action。OCR 可含 LaTeX，运行时回传 `answer_result_shown`，不推进教学步骤。
+
 **揭晓方式两种，不要混用**：
 
 - `oral` 是**两段式**：问步只 push 问题；答步再 push `{ "attachStepId": "<问步短id>", "answer": "…" }` 把答案挂回问卡。
