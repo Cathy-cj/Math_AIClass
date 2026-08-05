@@ -69,6 +69,17 @@ const result = await page.evaluate(async () => {
   window.AIClassCoursewareSubmit = null
   window.AIClassSubmitText.report('choice', 'A')
   var fallbackSubmitLogs = window._frameworkLog.slice(logCountBeforeFallbackSubmit)
+  var longFormulaField = window.AIClassComponent.createLatexMathfield({ enabled: true })
+  longFormulaField.style.width = '180px'
+  document.body.appendChild(longFormulaField)
+  var longFormula = '123456789+987654321+555555555+444444444+333333333'
+  longFormulaField.setValue(longFormula)
+  longFormulaField.dispatchEvent(new Event('input', { bubbles: true }))
+  await new Promise((resolve) => setTimeout(resolve, 250))
+  var formulaContent = longFormulaField.shadowRoot.querySelector('.ML__content')
+  var longFormulaWraps = /^\\displaylines\{/.test(longFormulaField.getValue('latex'))
+  var longFormulaFits = formulaContent.scrollWidth <= formulaContent.clientWidth + 1
+  var longFormulaSubmitted = window.AIClassComponent.getLatexValue(longFormulaField)
 
   return {
     log: window._frameworkLog.slice(),
@@ -81,7 +92,10 @@ const result = await page.evaluate(async () => {
     photoCardIsFirst: cardIsFirst,
     photoCardInLeftScroll: cardInLeftScroll,
     photoLogs: logAfterPhotoResult,
-    fallbackSubmitLogs: fallbackSubmitLogs
+    fallbackSubmitLogs: fallbackSubmitLogs,
+    longFormulaWraps: longFormulaWraps,
+    longFormulaFits: longFormulaFits,
+    longFormulaSubmitted: longFormulaSubmitted
   }
 })
 
@@ -126,6 +140,12 @@ if (!result.fallbackSubmitLogs.some((item) =>
   Object.keys(item).sort().join(',') === 'kind,type,value'
 )) {
   throw new Error('Fallback interaction submit did not use the normalized protocol kind.')
+}
+if (!result.longFormulaWraps || !result.longFormulaFits) {
+  throw new Error('Long formula did not automatically wrap within the input bounds.')
+}
+if (result.longFormulaSubmitted !== '123456789+987654321+555555555+444444444+333333333') {
+  throw new Error('Auto-wrapped formula did not normalize to the original submission value.')
 }
 
 console.log('Browser smoke test passed.')

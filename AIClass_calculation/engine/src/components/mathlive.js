@@ -7,7 +7,7 @@
   var tabIndex = 0
   var BASE_WIDTH = 540
   var BASE_HEIGHT = 270
-  var state = { left: 16, top: 16, scale: 0.82 }
+  var state = { left: 16, top: 16, scale: 0.82, docked: true }
   var pageScale = 1
   var scaleController = null
 
@@ -109,13 +109,24 @@
     if (fab) fab.style.setProperty('--aic-math-page-scale', pageScale)
     if (!panel) return
     var effectiveScale = state.scale * pageScale
+    panel.style.setProperty('--aic-math-keyboard-scale', effectiveScale)
+    if (state.docked) {
+      panel.style.left = 'auto'
+      panel.style.top = 'auto'
+      panel.style.right = '8px'
+      panel.style.bottom = '8px'
+      panel.style.transformOrigin = 'right bottom'
+      return
+    }
     var width = BASE_WIDTH * effectiveScale
     var height = BASE_HEIGHT * effectiveScale
     state.left = Math.max(8, Math.min(state.left, window.innerWidth - width - 8))
     state.top = Math.max(8, Math.min(state.top, window.innerHeight - height - 8))
+    panel.style.right = 'auto'
+    panel.style.bottom = 'auto'
+    panel.style.transformOrigin = 'top left'
     panel.style.left = state.left + 'px'
     panel.style.top = state.top + 'px'
-    panel.style.setProperty('--aic-math-keyboard-scale', effectiveScale)
   }
 
   function ensureScaleController() {
@@ -131,6 +142,12 @@
   function bindPanelPointer(header, resize) {
     function begin(event, mode) {
       event.preventDefault()
+      if (state.docked) {
+        var rect = panel.getBoundingClientRect()
+        state.docked = false
+        state.left = rect.left
+        state.top = rect.top
+      }
       var startX = event.clientX
       var startY = event.clientY
       var startLeft = state.left
@@ -165,7 +182,8 @@
     panel.setAttribute('aria-label', '公式键盘')
     document.body.appendChild(panel)
     ensureScaleController()
-    state.top = window.innerHeight - BASE_HEIGHT * state.scale - 16
+    // 默认用 right/bottom 锚定，避免页面缩放后落在视口外。
+    state.docked = true
     renderPanel()
     clampPanel()
     window.addEventListener('resize', clampPanel)
@@ -210,10 +228,65 @@
     return fab
   }
 
+  function unwrapAutoLines(latex) {
+    return String(latex || '')
+      .replace(/^\\displaylines\{([\s\S]*)\}$/, '$1')
+      .replace(/\\\\\s*/g, '')
+  }
+
+  function splitLatexLines(latex, maxColumns) {
+    var tokens = String(latex || '').match(/\\[a-zA-Z]+|\\.|\{|\}|[\s\S]/g) || []
+    var lines = []
+    var line = ''
+    var columns = 0
+    var depth = 0
+    function flush() {
+      if (!line) return
+      lines.push(line)
+      line = ''
+      columns = 0
+    }
+    tokens.forEach(function (token) {
+      line += token
+      columns += token.charAt(0) === '\\' ? 2 : 1
+      if (token === '{') depth += 1
+      if (token === '}') depth = Math.max(0, depth - 1)
+      if (depth !== 0 || columns < maxColumns) return
+      if (/^(?:[+\-=,]|\\times|\\div|\\cdot|\\pm)$/.test(token) || columns >= maxColumns + 4) flush()
+    })
+    flush()
+    return lines
+  }
+
+  function updateAutoLines(field) {
+    if (!hasMathLive || !field || !field.isConnected || field.__aicAutoLineUpdating) return
+    var content = field.shadowRoot && field.shadowRoot.querySelector('.ML__content')
+    if (!content || content.clientWidth < 1) return
+    var latex = String(field.getValue('latex') || '')
+    var rawLatex = field.__aicAutoWrapped ? unwrapAutoLines(latex) : latex
+    if (content.scrollWidth <= content.clientWidth + 1) return
+    var lines = splitLatexLines(rawLatex, Math.max(8, Math.floor(content.clientWidth / 16)))
+    if (lines.length < 2) return
+    field.__aicAutoLineUpdating = true
+    field.setValue('\\displaylines{' + lines.join(' \\\\ ') + '}')
+    field.__aicAutoWrapped = true
+    field.__aicAutoLineUpdating = false
+  }
+
+  function scheduleAutoLines(field) {
+    window.requestAnimationFrame(function () { updateAutoLines(field) })
+  }
+
   ns.createLatexMathfield = function (options) {
     options = options || {}
     var field = document.createElement(hasMathLive ? 'math-field' : 'input')
     field.className = 'lf-fill-input aic-math-field'
+    if (hasMathLive && field.shadowRoot) {
+      var overflowStyle = document.createElement('style')
+      overflowStyle.textContent = '.ML__container{max-width:100%}' +
+        '.ML__content{overflow:hidden!important}'
+      field.shadowRoot.appendChild(overflowStyle)
+    }
     field.id = options.id || ''
     field.setAttribute('aria-label', options.ariaLabel || '公式填空')
     if (hasMathLive) field.setAttribute('smart-fence', '')
@@ -224,15 +297,22 @@
     field.disabled = !options.enabled
     field.addEventListener('focus', function () { showKeyboard(field) })
     field.addEventListener('click', function () { showKeyboard(field) })
+    if (hasMathLive) {
+      field.addEventListener('input', function () {
+        if (!field.__aicAutoLineUpdating) scheduleAutoLines(field)
+      })
+    }
     window.requestAnimationFrame(function () {
       if (!field.isConnected) return
       if (hasMathLive) field.menuItems = []
+      if (hasMathLive) scheduleAutoLines(field)
     })
     return field
   }
 
   ns.getLatexValue = function (field) {
-    return String(field && field.getValue ? field.getValue('latex') : field && field.value || '').trim()
+    var latex = String(field && field.getValue ? field.getValue('latex') : field && field.value || '')
+    return (field && field.__aicAutoWrapped ? unwrapAutoLines(latex) : latex).trim()
   }
 
   ns.syncMathKeyboard = function () {

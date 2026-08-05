@@ -63,6 +63,14 @@ function publishExportDirectory(temp, finalDir) {
     if (code !== 'EBUSY' && code !== 'EPERM' && code !== 'ENOTEMPTY') throw err
   }
   fs.mkdirSync(finalDir, { recursive: true })
+  for (const entry of fs.readdirSync(finalDir)) {
+    if (fs.existsSync(path.join(temp, entry))) continue
+    try {
+      fs.rmSync(path.join(finalDir, entry), { recursive: true, force: true, maxRetries: 2, retryDelay: 100 })
+    } catch (_) {
+      // A browser may still hold an old asset; keep it rather than failing the export.
+    }
+  }
   copyDirectory(temp, finalDir)
   try {
     removeDirectory(temp)
@@ -208,6 +216,52 @@ function normalizePlan(raw) {
   }
 }
 
+const SCREEN_LATEX_CMD = /\\(?:frac|dfrac|sqrt|times|div|pm|cdot|pi)\b/
+const SCREEN_UNICODE_MATH = /[²³×÷½⅓¼⅔¾]/
+
+function screenTextNeedsLatex(text) {
+  const s = String(text || '')
+  if (!s) return false
+  if (SCREEN_LATEX_CMD.test(s)) return true
+  if (SCREEN_UNICODE_MATH.test(s)) return true
+  return false
+}
+
+function assertScreenLatexDelimiters(text, label) {
+  if (!screenTextNeedsLatex(text)) return
+  if (!/\$[^$]+\$/.test(String(text))) {
+    throw new Error(`${label} must wrap math in $...$`)
+  }
+}
+
+function validateQuickQALatex(quickQA, planId) {
+  for (const item of quickQA || []) {
+    assertScreenLatexDelimiters(item.question, `quickQA question (${planId}/${item.id})`)
+    assertScreenLatexDelimiters(item.answer, `quickQA answer (${planId}/${item.id})`)
+  }
+}
+
+function isStemEquationBlock(block) {
+  return /\bcalc-eq(?:--stem|-index)?\b/.test(String(block?.class || ''))
+}
+
+function validateStemEquationBlocks(plan) {
+  for (const step of plan.steps || []) {
+    for (const block of step.push || []) {
+      if (block.region === 'top' && isStemEquationBlock(block) && block.type !== 'latex') {
+        throw new Error(
+          `Stem equation must use type "latex" (calc-eq): ${plan.id}/${step.id}`
+        )
+      }
+      if (block.type === 'latex' && block.region === 'top' && isStemEquationBlock(block)) {
+        if (!block.tex && !block.value) {
+          throw new Error(`Stem latex block requires tex: ${plan.id}/${step.id}`)
+        }
+      }
+    }
+  }
+}
+
 function validatePlanSemantics(plan) {
   // 本仓唯一模板：top-split 计算讲法（要点→详解→答案，对齐 module_template）
   if (plan.layout !== 'top-split') {
@@ -267,6 +321,8 @@ function validatePlanSemantics(plan) {
       throw new Error(`fillBlank quickQA must contain ＿＿: ${plan.id}/${item.id}`)
     }
   }
+  validateQuickQALatex(quickQA, plan.id)
+  validateStemEquationBlocks(plan)
 
   for (const step of plan.steps) {
     const agentType = step.agent?.type
@@ -497,7 +553,69 @@ function buildLessonMeta(course) {
   }
 }
 
-function ensureCourseDebugShell(courseDir, courseId) {
+function relativeToRepo(file) {
+  const relative = path.relative(repoRoot, file)
+  if (relative.startsWith('..') || path.isAbsolute(relative)) {
+    throw new Error(`Debug editing only supports plans inside the repository: ${file}`)
+  }
+  return relative.split(path.sep).join('/')
+}
+
+function buildDebugEditMap(courseId, snapshots) {
+  const base = `courses/${courseId}/.generated`
+  const dist = `engine/dist/${courseId}`
+  const actions = []
+  for (const snapshot of Object.values(snapshots)) {
+    for (const step of snapshot.plan.steps) {
+      actions.push({
+        action: step.action,
+        stepId: step.id,
+        planFile: relativeToRepo(snapshot.planFile),
+        portablePlan: `content/${snapshot.plan.id}/plan.json`,
+        portableOutput: `content/${snapshot.plan.id}/output.json`,
+        generatedModule: `${base}/lesson/modules/${snapshot.moduleFile}`,
+        distModule: `${dist}/lesson/modules/${snapshot.moduleFile}`,
+        portableModule: `runtime/lesson/modules/${snapshot.moduleFile}`,
+        editable: true
+      })
+    }
+  }
+  return {
+    version: 1,
+    courseId,
+    generatedCatalog: `${base}/action-catalog.json`,
+    distCatalog: `${dist}/action-catalog.json`,
+    distIndex: `${dist}/index.html`,
+    actions
+  }
+}
+
+function buildProblemOutput(snapshot, catalog) {
+  return {
+    schemaVersion: 1,
+    problemId: snapshot.plan.id,
+    title: snapshot.plan.title,
+    sourceOfTruth: 'plan.json',
+    modulePath: `runtime/lesson/modules/${snapshot.moduleFile}`,
+    steps: snapshot.plan.steps.map((step) => ({
+      stepId: step.id,
+      action: step.action,
+      description: (step.agent && step.agent.description) || step.description || ''
+    })),
+    catalog: catalog.filter((item) => snapshot.plan.steps.some((step) => step.action === item.name))
+  }
+}
+
+function embedDebugEditMap(shellFile, editMap) {
+  let shell = fs.readFileSync(shellFile, 'utf8')
+  shell = shell.replace(
+    /var editMap = window\.AICLASS_DEBUG_EDIT_MAP \|\| null/,
+    `var editMap = ${safeJsonForScript(editMap)}`
+  )
+  writeText(shellFile, shell)
+}
+
+function ensureCourseDebugShell(courseDir, courseId, editMap) {
   const source = path.join(root, 'templates', 'lesson-runtime', 'debug', 'parent-shell')
   const target = path.join(courseDir, 'debug')
   copyDirectory(source, target)
@@ -510,11 +628,14 @@ function ensureCourseDebugShell(courseDir, courseId) {
     `var iframeSrc = params.get('src') || '${iframeSrc}'`
   )
   writeText(shellJs, shell)
+  writeJson(path.join(target, 'edit-map.json'), editMap)
+  embedDebugEditMap(shellJs, editMap)
   writeText(
     path.join(target, 'README.md'),
     `# ${courseId} 调试页\n\n` +
       `该页由 \`lesson:generate\` 自动同步，动作列表通过 \`help\` 动态读取。\n\n` +
-      `先运行 \`cd engine && npm run course:export -- ${courseId}\`，再打开 [index.html](./index.html)。\n`
+      `在 Chrome 或 Edge 中打开 [index.html](./index.html)，点击“连接课程文件夹”。选择仓库根目录会同步写回 plan.json；选择发布课件根目录（含 course.json 的 dist/<courseId>）则只修改该课件包。保存后刷新 iframe 即生效。\n\n` +
+      `首次使用前先运行 \`cd engine && npm run course:export -- ${courseId}\`。\n`
   )
 }
 
@@ -548,12 +669,15 @@ function generateCourse(courseId) {
     writeText(path.join(moduleDir, moduleName), output.source)
     modules.push(`lesson/modules/${moduleName}`)
     catalog.push(...actionCatalog(plan, output.module))
-    snapshots[plan.id] = { planFile, plan, module: output.module }
+    snapshots[plan.id] = { planFile, plan, module: output.module, moduleFile: moduleName }
   }
 
   catalog = mergeCatalogs(catalog, loadAuthoredCatalog(course))
   if (!catalog.length) throw new Error('Course action catalog is empty.')
   checkUnique(catalog, 'name', 'course action')
+  for (const snapshot of Object.values(snapshots)) {
+    writeJson(path.join(path.dirname(snapshot.planFile), 'output.json'), buildProblemOutput(snapshot, catalog))
+  }
   writeJson(path.join(generated, 'action-catalog.json'), catalog)
   writeJson(path.join(generated, 'debug-tree.json'), {
     courseId,
@@ -582,8 +706,9 @@ function generateCourse(courseId) {
     path.join(generated, 'lesson', 'course.meta.js'),
     `// @generated; do not edit.\nwindow.LESSON_META = ${safeJsonForScript(buildLessonMeta(course))}\n`
   )
-  ensureCourseDebugShell(course.dir, courseId)
-  return { course, generated, snapshots, catalog }
+  const editMap = buildDebugEditMap(courseId, snapshots)
+  ensureCourseDebugShell(course.dir, courseId, editMap)
+  return { course, generated, snapshots, catalog, editMap }
 }
 
 function copyCourseSourceFiles(course, target) {
@@ -593,18 +718,25 @@ function copyCourseSourceFiles(course, target) {
   copyDirectory(assetsSource, path.join(target, 'assets'))
 }
 
-function renderIndex(course, catalog) {
+function renderIndex(course, catalog, assetPrefix = '') {
   const template = fs.readFileSync(
     path.join(root, 'templates', 'lesson-runtime', 'index.template.html'),
     'utf8'
   )
-  const runtime = loadWorkspace().runtime || {
+  const baseRuntime = loadWorkspace().runtime || {
     katexBase: 'vendor/katex/'
   }
+  const runtime = Object.fromEntries(
+    Object.entries(baseRuntime).map(([key, value]) => [key, typeof value === 'string' ? assetPrefix + value : value])
+  )
   return template
     .replaceAll('__COURSE_TITLE__', escapeHtml(course.config.title))
     .replace('__ACTION_CATALOG_JSON__', safeJsonForScript(catalog))
     .replace('__RUNTIME_CONFIG_JSON__', safeJsonForScript(runtime))
+    .replaceAll('href="src/', `href="${assetPrefix}src/`)
+    .replaceAll('href="lesson/', `href="${assetPrefix}lesson/`)
+    .replace("srcRoot: 'src', lessonRoot: 'lesson'", `srcRoot: '${assetPrefix}src', lessonRoot: '${assetPrefix}lesson'`)
+    .replaceAll('src="src/', `src="${assetPrefix}src/`)
 }
 
 function escapeHtml(value) {
@@ -622,81 +754,70 @@ function gitCommit() {
 
 function exportCourse(courseId, options = {}) {
   const result = generateCourse(courseId)
-  const { course, generated, snapshots, catalog } = result
+  const { course, generated, snapshots, catalog, editMap } = result
   const temp = path.join(root, 'dist', `.tmp-${courseId}`)
   const finalDir = path.join(root, 'dist', courseId)
+  const packageDir = path.join(temp, 'course')
   removeDirectory(temp)
   fs.mkdirSync(temp, { recursive: true })
 
-  copyDirectory(path.join(root, 'src'), path.join(temp, 'src'))
-  copyDirectory(path.join(root, 'vendor'), path.join(temp, 'vendor'))
+  copyDirectory(path.join(root, 'src'), path.join(packageDir, 'runtime', 'src'))
+  copyDirectory(path.join(root, 'vendor'), path.join(packageDir, 'runtime', 'vendor'))
   copyDirectory(
     path.join(root, 'templates', 'lesson-runtime', 'lesson'),
-    path.join(temp, 'lesson')
+    path.join(packageDir, 'runtime', 'lesson')
   )
   copyDirectory(
     path.join(root, 'templates', 'lesson-runtime', 'debug'),
     path.join(temp, 'debug')
   )
-  copyCourseSourceFiles(course, temp)
-  copyDirectory(path.join(generated, 'lesson'), path.join(temp, 'lesson'))
+  writeJson(path.join(temp, 'debug', 'edit-map.json'), editMap)
+  embedDebugEditMap(path.join(temp, 'debug', 'parent-shell', 'parent-shell.js'), editMap)
+  copyCourseSourceFiles(course, path.join(packageDir, 'runtime'))
+  copyDirectory(path.join(generated, 'lesson'), path.join(packageDir, 'runtime', 'lesson'))
   const customStyle = path.join(course.dir, 'lesson', 'styles', 'lesson.css')
   if (fs.existsSync(customStyle)) {
-    copyFile(customStyle, path.join(temp, 'lesson', 'styles', 'lesson.css'))
+    copyFile(customStyle, path.join(packageDir, 'runtime', 'lesson', 'styles', 'lesson.css'))
   } else {
     copyFile(
       path.join(root, 'templates', 'course', 'lesson', 'styles', 'lesson.css'),
-      path.join(temp, 'lesson', 'styles', 'lesson.css')
+      path.join(packageDir, 'runtime', 'lesson', 'styles', 'lesson.css')
     )
   }
 
-  writeText(path.join(temp, 'index.html'), renderIndex(course, catalog))
-  writeJson(path.join(temp, 'action-catalog.json'), catalog)
+  writeText(path.join(temp, 'index.html'), renderIndex(course, catalog, 'course/runtime/'))
+  writeJson(path.join(packageDir, 'runtime', 'action-catalog.json'), catalog)
   writeJson(path.join(temp, 'debug', 'catalog-tree.json'), readJson(path.join(generated, 'debug-tree.json')))
-  writeJson(path.join(temp, 'reports', 'action-catalog.json'), catalog)
-  writeJson(path.join(temp, 'reports', 'catalog-tree.json'), readJson(path.join(generated, 'debug-tree.json')))
-  writeJson(path.join(temp, 'course.json'), course.config)
-  writeJson(path.join(temp, 'engine.version.json'), readJson(path.join(root, 'engine.version.json')))
-  writeJson(path.join(temp, 'package.json'), {
-    name: `aiclass-course-${courseId}`,
-    private: true,
-    scripts: { dev: 'python -m http.server 3456', test: 'node scripts/smoke-test.mjs' }
-  })
+  writeJson(path.join(packageDir, 'course.json'), course.config)
+  writeJson(path.join(packageDir, 'engine.version.json'), readJson(path.join(root, 'engine.version.json')))
 
-  copyDirectory(path.join(root, 'tools'), path.join(temp, 'framework-source', 'tools'))
-  copyDirectory(path.join(root, 'schemas'), path.join(temp, 'framework-source', 'schemas'))
-  copyDirectory(path.join(root, 'templates'), path.join(temp, 'framework-source', 'templates'))
-  copyFile(path.join(root, 'package.json'), path.join(temp, 'framework-source', 'package.json'))
-  copyFile(path.join(root, 'package-lock.json'), path.join(temp, 'framework-source', 'package-lock.json'))
-  copyFile(path.join(root, 'engine.version.json'), path.join(temp, 'framework-source', 'engine.version.json'))
-  copyDirectory(course.dir, path.join(temp, 'course-source', courseId), { exclude: [generatedName] })
   writeText(
-    path.join(temp, 'README-SOURCE.md'),
-    '# Complete source snapshot\n\n' +
-    '- `src/`, `lesson/`, `vendor/` and `index.html` are the directly runnable package.\n' +
-    '- `course-source/` is the exact course source used for this release.\n' +
-    '- `authoring-snapshot/` preserves normalized Plan inputs.\n' +
-    '- `framework-source/` preserves generator, schemas, templates and lockfile.\n' +
-    '- `reports/` and `course.lock.json` record generated outputs and hashes.\n'
+    path.join(packageDir, 'README.md'),
+    '# 可编辑课件包\n\n' +
+    '- 仅编辑 `content/<题目>/plan.json`；同目录 `output.json` 是自动生成索引。\n' +
+    '- `runtime/` 是运行产物，请勿直接修改。\n'
   )
 
-  const inputHashes = { 'course.json': sha256File(course.file) }
+  const inputHashes = { 'course/course.json': sha256File(course.file) }
   for (const [problemId, snapshot] of Object.entries(snapshots)) {
-    const target = path.join(temp, 'authoring-snapshot', problemId, 'plan.json')
+    const targetDir = path.join(packageDir, 'content', problemId)
+    const target = path.join(targetDir, 'plan.json')
     writeJson(target, snapshot.plan)
+    const output = buildProblemOutput(snapshot, catalog)
+    writeJson(path.join(targetDir, 'output.json'), output)
     inputHashes[`plan:${problemId}`] = sha256File(target)
   }
 
   writeText(
-    path.join(temp, 'scripts', 'smoke-test.mjs'),
+    path.join(packageDir, 'scripts', 'smoke-test.mjs'),
     `import fs from 'node:fs'\n` +
-    `for (const file of ['index.html','course.json','engine.version.json','lesson/manifest.js']) {\n` +
+    `for (const file of ['course.json','engine.version.json','runtime/lesson/manifest.js']) {\n` +
     `  if (!fs.existsSync(new URL('../' + file, import.meta.url))) throw new Error('Missing ' + file)\n` +
     `}\nconsole.log('Course package smoke test passed.')\n`
   )
 
   const outputHashes = collectHashes(temp)
-  writeJson(path.join(temp, 'course.lock.json'), {
+  writeJson(path.join(packageDir, 'course.lock.json'), {
     schemaVersion: 1,
     courseId,
     courseVersion: course.config.version,
@@ -759,7 +880,14 @@ function newCourse(courseId, title) {
   for (const dir of ['lesson/modules', 'lesson/extensions', 'assets', 'authoring']) {
     fs.mkdirSync(path.join(target, dir), { recursive: true })
   }
-  ensureCourseDebugShell(target, courseId)
+  ensureCourseDebugShell(target, courseId, {
+    version: 1,
+    courseId,
+    generatedCatalog: `courses/${courseId}/.generated/action-catalog.json`,
+    distCatalog: `engine/dist/${courseId}/action-catalog.json`,
+    distIndex: `engine/dist/${courseId}/index.html`,
+    actions: []
+  })
   console.log(`Created courses/${courseId}`)
 }
 

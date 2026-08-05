@@ -37,7 +37,7 @@ body .aic-math-fab:hover { filter:brightness(1.05); }
 .aic-key-square { display:inline-flex; align-items:flex-start; font-size:15px; line-height:1; }
 .aic-key-square i { display:inline-block; width:12px; height:11px; margin-top:5px; border:1px dashed currentColor; border-radius:1px; }
 .aic-key-square sup { margin-left:2px; font-size:11px; }
-.aic-math-field { display:inline-block; box-sizing:border-box; width:fit-content; min-width:42px; min-height:36px; height:auto; padding:2px 6px; vertical-align:middle; overflow:visible; --caret-color:#2563eb; --selection-background-color:rgba(37,99,235,.22); --contains-highlight-background-color:rgba(37,99,235,.12); --smart-fence-color:#2563eb; }
+.aic-math-field { display:inline-block; box-sizing:border-box; width:fit-content; max-width:100%; min-width:42px; min-height:36px; height:auto; padding:2px 6px; vertical-align:middle; overflow:visible; --caret-color:#2563eb; --selection-background-color:rgba(37,99,235,.22); --contains-highlight-background-color:rgba(37,99,235,.12); --smart-fence-color:#2563eb; }
 .course-container math-field.aic-math-field { width:fit-content; height:auto !important; min-height:36px; max-width:100%; }
 .aic-math-field:disabled { background:rgba(255,214,76,.34); }
 .aic-math-field::part(virtual-keyboard-toggle),

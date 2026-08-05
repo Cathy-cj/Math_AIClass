@@ -465,6 +465,10 @@
       var sid = block.getAttribute('data-step-id')
       var isActive = activeStepId != null && String(sid) === String(activeStepId)
       block.setAttribute('data-is-current-step', isActive ? 'true' : 'false')
+      ;(block.querySelectorAll ? block.querySelectorAll('.aic-button-submit') : []).forEach(function (button) {
+        button.hidden = !isActive
+        button.disabled = !isActive
+      })
     })
     this._syncChoiceBlocks(activeStepId)
     if (window.AIClassComponent && typeof window.AIClassComponent.syncMathKeyboard === 'function') {

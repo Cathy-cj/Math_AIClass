@@ -16,6 +16,7 @@
       tex = '$' + tex + '$'
     }
     wrap.setAttribute('data-calc-tex', rawTex)
+    wrap.setAttribute('data-force-latex', '1')
     wrap.textContent = tex
     return wrap
   }

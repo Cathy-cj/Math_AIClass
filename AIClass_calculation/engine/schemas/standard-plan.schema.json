@@ -13,7 +13,7 @@
   "required": ["schemaVersion", "id", "title", "layout", "steps"],
   "properties": {
     "schemaVersion": { "const": 1 },
-    "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]{1,47}$" },
+    "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{1,47}$" },
     "title": { "type": "string", "minLength": 1 },
     "moduleType": { "enum": ["knowledge", "example", "practice", "homework"] },
     "difficulty": { "type": "integer", "minimum": 1, "maximum": 6 },

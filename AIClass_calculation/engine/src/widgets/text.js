@@ -24,6 +24,9 @@
     }
     var lines = block.lines || (block.text ? [block.text] : [])
     lines.forEach(function (line) { renderLine(el, line) })
+    if (window.AIClassLatex && (block.region === 'top' || /\bstem\b/.test(String(block.class || '')))) {
+      window.AIClassLatex.render(el)
+    }
   })
 
   AIClassWidgetRegistry.register('section', function (el, block) {

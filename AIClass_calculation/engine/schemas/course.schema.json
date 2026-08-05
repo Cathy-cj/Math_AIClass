@@ -10,7 +10,7 @@
     "schemaVersion": { "const": 1 },
     "courseId": {
       "type": "string",
-      "pattern": "^[a-z][a-z0-9-]{1,47}$"
+      "pattern": "^[a-z0-9][a-z0-9-]{1,47}$"
     },
     "title": { "type": "string", "minLength": 1 },
     "version": {
@@ -45,7 +45,7 @@
             "properties": {
               "problemId": {
                 "type": "string",
-                "pattern": "^[a-z][a-z0-9-]{1,47}$"
+                "pattern": "^[a-z0-9][a-z0-9-]{1,47}$"
               },
               "order": { "type": "integer", "minimum": 1 },
               "actionPrefix": { "type": "string", "minLength": 1, "maxLength": 20 },

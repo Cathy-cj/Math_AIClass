@@ -20,7 +20,7 @@ const generated = spawnSync(process.execPath, ['tools/aiclass.mjs', 'course:expo
 if (generated.status !== 0) throw new Error(generated.stderr || generated.stdout)
 
 const exported = path.join(root, 'dist', courseId)
-const catalog = JSON.parse(fs.readFileSync(path.join(exported, 'action-catalog.json'), 'utf8'))
+const catalog = JSON.parse(fs.readFileSync(path.join(exported, 'course', 'runtime', 'action-catalog.json'), 'utf8'))
 const actions = catalog
   .map((item) => item.name)
   .filter((name) => name.startsWith(actionPrefix) && !name.includes('快问快答'))
@@ -63,7 +63,10 @@ const result = await page.evaluate(async ({ actions }) => {
 await browser.close()
 
 if (errors.length) throw new Error(`Page errors:\n${errors.join('\n')}`)
-if (networkRequests.length) throw new Error(`Unexpected network requests:\n${networkRequests.join('\n')}`)
+const unexpectedRequests = networkRequests.filter(
+  (url) => !url.startsWith('https://cdn.jsdmirror.com/npm/mathlive@0.110.0/')
+)
+if (unexpectedRequests.length) throw new Error(`Unexpected network requests:\n${unexpectedRequests.join('\n')}`)
 if (!result.log.some((item) => item.type === 'step_ok')) throw new Error('Start action did not emit step_ok.')
 if (!result.log.some((item) => item.type === 'side_effect_ok')) {
   throw new Error('Side effects did not emit side_effect_ok.')
