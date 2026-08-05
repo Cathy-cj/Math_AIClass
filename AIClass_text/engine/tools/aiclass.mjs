@@ -788,6 +788,14 @@ function exportCourse(courseId, options = {}) {
 
   copyDirectory(path.join(root, 'src'), path.join(packageDir, 'runtime', 'src'))
   copyDirectory(path.join(root, 'vendor'), path.join(packageDir, 'runtime', 'vendor'))
+  // 共享核心装配：从 ../shared 合并 engine/src 与 engine/vendor（共享文件不在本仓库，编译时注入）
+  const sharedEngine = path.join(repoRoot, '..', 'shared', 'engine')
+  if (fs.existsSync(path.join(sharedEngine, 'src'))) {
+    copyDirectory(path.join(sharedEngine, 'src'), path.join(packageDir, 'runtime', 'src'))
+  }
+  if (fs.existsSync(path.join(sharedEngine, 'vendor'))) {
+    copyDirectory(path.join(sharedEngine, 'vendor'), path.join(packageDir, 'runtime', 'vendor'))
+  }
   copyDirectory(
     path.join(root, 'templates', 'lesson-runtime', 'lesson'),
     path.join(packageDir, 'runtime', 'lesson')
