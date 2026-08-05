@@ -29,10 +29,20 @@
     return btn
   }
 
+  var SUBMIT_DEBOUNCE_MS = 10000
+
   function createSubmitButton(opts) {
     opts = opts || {}
     opts.kind = 'submit'
     if (opts.text == null) opts.text = '提交'
+    var onClick = opts.onClick
+    var lastSubmitAt = 0
+    opts.onClick = function (event) {
+      var now = Date.now()
+      if (now - lastSubmitAt < SUBMIT_DEBOUNCE_MS) return
+      lastSubmitAt = now
+      if (typeof onClick === 'function') onClick(event)
+    }
     return createButton(opts)
   }
 

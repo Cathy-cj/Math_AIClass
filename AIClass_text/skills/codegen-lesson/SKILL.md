@@ -26,7 +26,7 @@ disable-model-invocation: true
 ## 步骤
 
 1. 读 `plan.json`：锁定全部 `steps[].action` 与 `push`；例题另读取顶层 `quickQA[]` / `quickQALayout`。
-2. 在 `../../../courses/{courseId}/lesson/modules/` 生成 `XX-{id}.js`：入口进 `containers[].steps`，其余进 `sideEffects`。
+2. 在 `../../../courses/{courseId}/lesson/modules/` 生成 `XX-{id}.js`：入口进 `containers[].steps`，其余进 `sideEffects`。每个 `moduleType: "practice"` 自动追加 `{actionPrefix}_作答_拍照` sideEffect；它仅在练习题入口 action 已执行后可派发，用于显示拍照作答区域。
 3. 在 `course.json.authoring.problems` 登记 Plan。
 4. 在 `engine/` 运行 `lesson:generate`，由生成器统一产生模块、manifest、题号和 action catalog
 6. **为本课件单独制作 debug 界面**：放 `courses/{courseId}/debug/index.html`。由 `lesson:generate` / `course:new` 从 `engine/templates/lesson-runtime/debug/parent-shell/` 同步；默认 iframe 指向本课 `engine/dist/{courseId}/index.html`。不得手写静态 action 按钮。动作列表、搜索、自动切换模块、重置、重载与回包日志一律从 `help` 动态获取。**不使用**仓库根目录 `debug/`。
@@ -46,9 +46,9 @@ disable-model-invocation: true
 | `guidanceChain` | `containers[0].guidanceChain`（**仅 title，无 desc**；sideEffect **不写** guidanceDesc） |
 | `guidanceLayout` | text-only 默认 `interleaved`（有引导链时） |
 | `moduleType + order` | 自动映射为 `例N / 练N / 作业N` |
-| `source` | 顶部来源，必须是真实出处 |
 | oral `attachStepId` | plan 内写题内短 id（如 `s09`）；codegen 自动前缀为 `{planId}_s09` 写入 sideEffect |
 | example `quickQA[]` | 绑定当前例题模块；自动生成打开 / 显示问题 / 显示答案 action，顶部布局为 `above-body` |
+| practice 模块 | 自动生成 `{actionPrefix}_作答_拍照` action；不写入 plan 的 `steps[]` |
 
 右栏累积规则：
 
@@ -60,7 +60,7 @@ disable-model-invocation: true
 
 - 未通过 plan:check 就落地
 - 写入图形字段或图形模块
-- 手写顶部题号、来源或难度 HTML
+- 手写顶部题号或难度 HTML
 - 在课程 CSS 中重复实现共享题号头或 guidance 结构
 - 只用 outline 生成模块
 - action 名与 plan 不一致
@@ -68,6 +68,7 @@ disable-model-invocation: true
 ## 自检
 
 - [ ] catalog 含全部 `*_开始` 与 `*_步骤*`
+- [ ] 每个练习题 catalog 在入口 action 后含 `{actionPrefix}_作答_拍照`；点击后上报 `user_submitted/course_photo`，宿主回传 `photo_result` 后显示作答结果
 - [ ] 口答/选择/算式与 plan.json 一致
 - [ ] working/compute 板书往下叠（不同 `replaceKey`）；同 key 仅出现在真·改写槽
 - [ ] 选择项及正文中的 LaTeX 已由 KaTeX 正常渲染，判题 value/answer 未改变

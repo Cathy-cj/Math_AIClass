@@ -35,9 +35,10 @@ disable-model-invocation: true
 7. **提取已知 / 列式计算**：亮标数据（`transition.phase` 变体）→ 逐段列式（`transition.compute` 变体）；**最后一步**除答案外必须兑现 `closing.recap`（星级拼装复盘）＋ `takeaway`（`closing.recap` / `closing.win` 变体）
 8. 顶层写 `layout: "text-only"` 与 `guidanceLayout: "interleaved"`；正文步骤 `group` 与动态环节序号一一对应
 9. **例题快问快答**：仅 `moduleType: "example"`，从 outline 的 `quickQASkeleton` 原样转写出独立顶层 `quickQA[]`（3–5 题），并写 `quickQALayout: "above-body"`。它**不属于** `steps[]` / `push`；不要手写打开、出题、揭晓 action，codegen 会按例题前缀生成。逐题核对是本题具体数据/关系/中间量，且答案唯一，禁止开放题。
+9.1 **练习题拍照作答**：`moduleType: "practice"` 不在 plan 中手写拍照 action 或作答结果 push；codegen 会在练习入口 action 后自动生成 `{actionPrefix}_作答_拍照`。该组件仅请求宿主拍照，OCR 结果由宿主通过 `photo_result` 回传。
 10. 每步填充 `action`、`push`、`agent.type`（explain/ask）、`agent.description`（**TTS 逐字稿**，契约见 [reference.md](../lesson-plan/reference.md)）、`moduleNote`
 11. 从 outline `teachingStages[]` 复制 `guidanceChain`：**仅 `{ title }`，不写 `desc`**（已废弃）；**禁止**在 step 上写 `guidanceDesc`
-12. 复制 `lessonContext`、`outlineId`；`source` 只写真实出处；写 `lesson/{id}/plan.json`
+12. 复制 `lessonContext`、`outlineId`；写 `lesson/{id}/plan.json`（不再填写题目来源）
 13. 运行：
 
 ```bash

@@ -51,7 +51,6 @@ function main() {
     stem: plan.stem,
     answer: plan.answer,
     unit: plan.unit,
-    source: plan.source,
     moduleType: plan.moduleType,
     difficulty: plan.difficulty,
     layout: plan.layout,

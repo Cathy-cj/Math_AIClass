@@ -154,13 +154,12 @@
 - `layout` — 固定为 `"text-only"`
 - `guidanceLayout` — 固定 `"interleaved"`（讲解挂各节点 slot；纸格+引导轨）
 - 高亮传参：题干 `--lit` 红 / 讲解 `--em` 黄 / 得数 `--green` — 见 [text-only-marks.md](text-only-marks.md)
-- `source` — 仅填写真实题目来源；未知时留空，不用题型名称代替
 - `quickQA` — 仅例题填写。它是独立于 `steps[]` 的顶部快问快答配置；codegen 自动产生打开、显示问题、显示答案动作。
 - `quickQALayout` — 例题固定为 `"above-body"`，把快问快答显示在例题容器顶部。
 
 ### 顶部题号契约
 
-- Plan 只声明 `moduleType`、真实 `source` 与课程顺序，不手写“例1/练1”
+- Plan 只声明 `moduleType` 与课程顺序，不手写“例1/练1”；不再填写或上屏题目来源
 - codegen 按课程内同类型顺序生成：`example → 例N`、`practice → 练N`、`homework → 作业N`
 - 完整 `title` 是模块标题，不作为 `.course-label`
 
@@ -243,6 +242,13 @@
 ```
 
 **题干置顶**（仅开场）：`region: "top"`，无 `card`。
+
+#### 练习题拍照作答
+
+- 仅 `moduleType: "practice"` 使用；plan 不写拍照 action、push 或作答结果组件。
+- codegen 自动在该练习题的 action catalog 追加 `{actionPrefix}_作答_拍照`。宿主在练习入口 action 成功后再派发它，课件显示“作答结果 / 拍照上传”区域。
+- 点击上传只上报 `{ "type": "user_submitted", "kind": "course_photo" }`；手写板与 OCR 由宿主负责。
+- OCR 完成后宿主向 iframe 发送 `{ "type": "photo_result", "value": "..." }`。课件将结果填回当前拍照作答区域，并回传 `answer_result_shown`；不判题、不推进教学步骤。
 
 #### quickQA 顶部配置
 

@@ -13,6 +13,7 @@
 
   var params = new URLSearchParams(location.search)
   var iframeSrc = params.get('src') || '../../index.html'
+  var editMap = window.AICLASS_DEBUG_EDIT_MAP || null
 
   var frame = document.getElementById('course')
   var logEl = document.getElementById('log')
@@ -27,6 +28,7 @@
   var stepStatEl = document.getElementById('stepStat')
   var btnNext = document.getElementById('btnNext')
   var btnSidebar = document.getElementById('btnSidebar')
+  var btnConnectFolder = document.getElementById('btnConnectFolder')
 
   var catalog = []
   var lessonTitle = ''
@@ -37,6 +39,209 @@
   var doneKeys = {}
   var currentKey = null
   var pendingKey = null
+  var courseRootHandle = null
+  var saveMode = 'source'
+  var portableBase = ''
+  var editByAction = {}
+  if (editMap && Array.isArray(editMap.actions)) {
+    editMap.actions.forEach(function (entry) { editByAction[entry.action] = entry })
+  }
+
+  function editSupported() {
+    return !!(editMap && window.showDirectoryPicker && window.indexedDB)
+  }
+
+  function openHandleDb() {
+    return new Promise(function (resolve, reject) {
+      var request = indexedDB.open('aiclass-debug-editor', 1)
+      request.onupgradeneeded = function () { request.result.createObjectStore('handles') }
+      request.onsuccess = function () { resolve(request.result) }
+      request.onerror = function () { reject(request.error) }
+    })
+  }
+  function readStoredHandle() {
+    return openHandleDb().then(function (db) {
+      return new Promise(function (resolve, reject) {
+        var request = db.transaction('handles', 'readonly').objectStore('handles').get(editMap.courseId)
+        request.onsuccess = function () { resolve(request.result || null) }
+        request.onerror = function () { reject(request.error) }
+      })
+    })
+  }
+  function storeHandle(handle) {
+    return openHandleDb().then(function (db) {
+      return new Promise(function (resolve, reject) {
+        var request = db.transaction('handles', 'readwrite').objectStore('handles').put(handle, editMap.courseId)
+        request.onsuccess = function () { resolve() }
+        request.onerror = function () { reject(request.error) }
+      })
+    })
+  }
+  function setCourseRoot(handle) {
+    return handle.getDirectoryHandle('course').then(function (courseDir) {
+      return courseDir.getFileHandle('course.json')
+    }).then(function () {
+      saveMode = 'portable'
+      portableBase = 'course/'
+    }).catch(function () {
+      saveMode = 'source'
+    }).then(function () {
+      courseRootHandle = handle
+      btnConnectFolder.textContent = saveMode === 'portable'
+        ? '已连接发布课件' : '已连接课程文件夹'
+      renderList()
+    })
+  }
+  function connectCourseFolder() {
+    window.showDirectoryPicker({ mode: 'readwrite' }).then(function (handle) {
+      return handle.requestPermission({ mode: 'readwrite' }).then(function (state) {
+        if (state !== 'granted') throw new Error('未授予文件夹读写权限')
+        return storeHandle(handle).then(function () { return handle })
+      })
+    }).then(function (handle) {
+      return setCourseRoot(handle)
+    }).then(function () {
+      setStat(saveMode === 'portable'
+        ? '已连接发布课件，修改只保存到此课件包'
+        : '已连接课程文件夹，可点击口播稿编辑', 'ok')
+    }).catch(function (error) {
+      if (!error || error.name !== 'AbortError') setStat('连接课程文件夹失败：' + (error.message || error), 'err')
+    })
+  }
+  function fileHandle(relativePath) {
+    var parts = relativePath.split('/').filter(Boolean)
+    var name = parts.pop()
+    return parts.reduce(function (parent, part) {
+      return parent.then(function (dir) { return dir.getDirectoryHandle(part) })
+    }, Promise.resolve(courseRootHandle)).then(function (dir) { return dir.getFileHandle(name) })
+  }
+  function readText(relativePath) {
+    return fileHandle(relativePath).then(function (handle) { return handle.getFile() }).then(function (file) { return file.text() })
+  }
+  function writeText(relativePath, text) {
+    return fileHandle(relativePath).then(function (handle) {
+      return handle.createWritable().then(function (writable) {
+        return writable.write(text).then(function () { return writable.close() })
+      })
+    })
+  }
+  function scriptJson(value) {
+    return JSON.stringify(value).replace(/</g, '\\u003c').replace(/>/g, '\\u003e').replace(/&/g, '\\u0026')
+      .replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029')
+  }
+  function updateCatalog(text, action, description) {
+    var catalog = JSON.parse(text)
+    var item = catalog.find(function (entry) { return entry.name === action })
+    if (!item) throw new Error('未在动作目录中找到该步骤')
+    item.description = description
+    return JSON.stringify(catalog, null, 2) + '\n'
+  }
+  function updateModule(text, action, description) {
+    var prefix = 'window.__lessonRegisterModule('
+    var start = text.indexOf(prefix)
+    var end = text.lastIndexOf(')\n})()')
+    if (start < 0 || end < start) throw new Error('课件模块格式无法识别')
+    var jsonStart = start + prefix.length
+    var module = JSON.parse(text.slice(jsonStart, end))
+    var found = false
+    ;(module.containers || []).forEach(function (container) {
+      ;(container.steps || []).forEach(function (step) {
+        if (step.action === action) { step.description = description; found = true }
+      })
+    })
+    ;(module.sideEffects || []).forEach(function (step) {
+      if (step.action === action) { step.description = description; found = true }
+    })
+    if (!found) throw new Error('未在课件模块中找到该步骤')
+    return text.slice(0, jsonStart) + scriptJson(module) + text.slice(end)
+  }
+  function updateIndex(text, action, description) {
+    var match = /(<script type="application\/json" id="lesson-action-catalog">)([\s\S]*?)(<\/script>)/.exec(text)
+    if (!match) throw new Error('课件首页动作目录无法识别')
+    var found = false
+    var catalog = JSON.parse(match[2]).map(function (item) {
+      if (item.name !== action) return item
+      found = true
+      return Object.assign({}, item, { description: description })
+    })
+    if (!found) throw new Error('未在课件首页动作目录中找到该步骤')
+    return text.slice(0, match.index + match[1].length) + scriptJson(catalog) +
+      text.slice(match.index + match[0].length - match[3].length)
+  }
+  function updateOutput(text, action, description) {
+    var output = JSON.parse(text)
+    var found = false
+    var problems = output.problems || [output]
+    problems.forEach(function (problem) {
+      ;(problem.steps || []).forEach(function (step) {
+        if (step.action === action) {
+          step.description = description
+          found = true
+        }
+      })
+    })
+    ;(output.catalog || []).forEach(function (item) {
+      if (item.name === action) item.description = description
+    })
+    if (!found) throw new Error('未在 output.json 中找到该步骤')
+    return JSON.stringify(output, null, 2) + '\n'
+  }
+  function portablePath(sourcePath) {
+    var marker = 'engine/dist/' + editMap.courseId + '/'
+    var index = sourcePath.indexOf(marker)
+    if (index < 0) throw new Error('发布课件路径无法识别')
+    return sourcePath.slice(index + marker.length)
+  }
+  function portableFile(path) {
+    return portableBase + path
+  }
+  function saveDescription(item, description) {
+    var mapping = editByAction[item.name]
+    if (!courseRootHandle || !mapping || !mapping.editable) return Promise.reject(new Error('该口播稿不可编辑'))
+    var clean = description.trim()
+    var tasks = saveMode === 'portable' ? [
+      ['plan.json', function () { return readText(portableFile(mapping.portablePlan)).then(function (text) {
+        var plan = JSON.parse(text)
+        var step = (plan.steps || []).find(function (entry) { return entry.action === item.name })
+        if (!step) throw new Error('未在 plan.json 中找到该步骤')
+        step.agent = Object.assign({}, step.agent || {}, { description: clean })
+        return writeText(portableFile(mapping.portablePlan), JSON.stringify(plan, null, 2) + '\n')
+      }) }],
+      ['output.json', function () { return readText(portableFile(mapping.portableOutput)).then(function (text) { return writeText(portableFile(mapping.portableOutput), updateOutput(text, item.name, clean)) }) }],
+      ['动作目录', function () { return readText(portableFile('runtime/action-catalog.json')).then(function (text) { return writeText(portableFile('runtime/action-catalog.json'), updateCatalog(text, item.name, clean)) }) }],
+      ['课件模块', function () {
+        var file = portableFile(mapping.portableModule || portablePath(mapping.distModule))
+        return readText(file).then(function (text) { return writeText(file, updateModule(text, item.name, clean)) })
+      }],
+      ['课件首页', function () { return readText('index.html').then(function (text) { return writeText('index.html', updateIndex(text, item.name, clean)) }) }]
+    ] : [
+      ['plan.json', function () { return readText(mapping.planFile).then(function (text) {
+        var plan = JSON.parse(text)
+        var step = (plan.steps || []).find(function (entry) { return entry.action === item.name })
+        if (!step) throw new Error('未在 plan.json 中找到该步骤')
+        step.agent = Object.assign({}, step.agent || {}, { description: clean })
+        return writeText(mapping.planFile, JSON.stringify(plan, null, 2) + '\n')
+      }) }],
+      ['生成动作目录', function () { return readText(editMap.generatedCatalog).then(function (text) { return writeText(editMap.generatedCatalog, updateCatalog(text, item.name, clean)) }) }],
+      ['运行时动作目录', function () { return readText(editMap.distCatalog).then(function (text) { return writeText(editMap.distCatalog, updateCatalog(text, item.name, clean)) }) }],
+      ['生成模块', function () { return readText(mapping.generatedModule).then(function (text) { return writeText(mapping.generatedModule, updateModule(text, item.name, clean)) }) }],
+      ['运行时模块', function () { return readText(mapping.distModule).then(function (text) { return writeText(mapping.distModule, updateModule(text, item.name, clean)) }) }],
+      ['运行时首页', function () { return readText(editMap.distIndex).then(function (text) { return writeText(editMap.distIndex, updateIndex(text, item.name, clean)) }) }]
+    ]
+    var completed = []
+    return tasks.reduce(function (chain, task) {
+      return chain.then(function () { return task[1]().then(function () { completed.push(task[0]) }) })
+    }, Promise.resolve()).then(function () {
+      item.description = clean
+      setStat('口播稿已保存并同步，正在刷新课件…', 'ok')
+      renderList()
+      document.getElementById('btnReload').click()
+    }).catch(function (error) {
+      var remaining = tasks.slice(completed.length).map(function (task) { return task[0] })
+      error.message = (error.message || error) + (completed.length ? '；已同步：' + completed.join('、') : '；尚未写入任何文件') + (remaining.length ? '；未同步：' + remaining.join('、') : '')
+      throw error
+    })
+  }
 
   try {
     collapseState = JSON.parse(localStorage.getItem(COLLAPSE_KEY) || '{}')
@@ -571,8 +776,9 @@
   }
 
   function makeActionBtn(item) {
-    var btn = document.createElement('button')
-    btn.type = 'button'
+    var btn = document.createElement('div')
+    btn.setAttribute('role', 'button')
+    btn.tabIndex = 0
     btn.className = 'action-btn'
     var key = itemKey(item)
     if (doneKeys[key]) btn.classList.add('is-done')
@@ -590,16 +796,75 @@
     nameEl.className = 'name'
     nameEl.textContent = item.label || item.name
     body.appendChild(nameEl)
-    if (item.description) {
+    if (item.description || (courseRootHandle && editByAction[item.name] && editByAction[item.name].editable)) {
       var descEl = document.createElement('div')
       descEl.className = 'desc'
-      descEl.textContent = item.description
+      var editable = !!(courseRootHandle && editByAction[item.name] && editByAction[item.name].editable)
+      if (editable) {
+        descEl.classList.add('is-editable')
+        descEl.title = '点击编辑口播稿'
+      }
+      descEl.textContent = item.description || '（暂无口播稿，点击补充）'
+      if (editable) {
+        descEl.addEventListener('click', function (event) {
+          event.stopPropagation()
+          if (descEl.classList.contains('is-editing')) return
+          descEl.classList.add('is-editing')
+          descEl.textContent = ''
+          var input = document.createElement('textarea')
+          input.className = 'desc-editor'
+          input.value = item.description || ''
+          var hint = document.createElement('div')
+          hint.className = 'desc-editor-hint'
+          hint.textContent = '口播稿建议使用纯中文，不写数字、字母或公式符号。'
+          var actions = document.createElement('div')
+          actions.className = 'desc-editor-actions'
+          var save = document.createElement('button')
+          save.type = 'button'
+          save.className = 'btn btn-primary'
+          save.textContent = '保存'
+          var cancel = document.createElement('button')
+          cancel.type = 'button'
+          cancel.className = 'btn'
+          cancel.textContent = '取消'
+          actions.appendChild(save)
+          actions.appendChild(cancel)
+          descEl.appendChild(input)
+          descEl.appendChild(hint)
+          descEl.appendChild(actions)
+          input.focus()
+          input.addEventListener('input', function () {
+            var hasNotation = /[A-Za-z0-9+\-*/=<>[\]{}^_\\]/.test(input.value)
+            hint.classList.toggle('is-warning', hasNotation)
+            hint.textContent = hasNotation ? '提示：口播稿建议改为中文读法，不写数字或字母。' : '口播稿建议使用纯中文，不写数字、字母或公式符号。'
+          })
+          cancel.onclick = function (e) {
+            e.stopPropagation()
+            descEl.classList.remove('is-editing')
+            descEl.textContent = item.description || '（暂无口播稿，点击补充）'
+          }
+          save.onclick = function (e) {
+            e.stopPropagation()
+            save.disabled = true
+            saveDescription(item, input.value).catch(function (error) {
+              setStat('口播稿保存失败：' + (error.message || error), 'err')
+              save.disabled = false
+            })
+          }
+        })
+      }
       body.appendChild(descEl)
     }
 
     btn.appendChild(tag)
     btn.appendChild(body)
     btn.onclick = function () { send(item) }
+    btn.onkeydown = function (event) {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault()
+        send(item)
+      }
+    }
     return btn
   }
 
@@ -772,12 +1037,30 @@
 
   window.addEventListener('message', function (e) {
     var d = e.data
-    if (!d || d.source !== MESSAGE_SOURCE) return
+    if (!d || (d.source !== MESSAGE_SOURCE && d.type !== 'user_submitted')) return
     handleInbound(d)
   })
 
   initSidebarChrome()
   initLogChrome()
+  if (editSupported()) {
+    btnConnectFolder.hidden = false
+    btnConnectFolder.onclick = connectCourseFolder
+    readStoredHandle().then(function (handle) {
+      if (!handle) return
+      return handle.queryPermission({ mode: 'readwrite' }).then(function (state) {
+        if (state === 'granted') {
+          return setCourseRoot(handle).then(function () {
+            setStat(saveMode === 'portable'
+              ? '已恢复发布课件连接，修改只保存到此课件包'
+              : '已恢复课程文件夹连接，可点击口播稿编辑', 'ok')
+          })
+        }
+      })
+    }).catch(function () {
+      // 句柄存储不可用时仍可通过按钮重新连接。
+    })
+  }
   btnNext.onclick = goNext
   document.getElementById('btnReset').onclick = function () { send('清空课件') }
   document.getElementById('btnHelp').onclick = pullHelp

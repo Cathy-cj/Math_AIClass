@@ -91,6 +91,7 @@ function checkEngineManifest() {
   const matches = [...source.matchAll(/['"]([^'"]+\.js)['"]/g)].map((item) => item[1])
   assert(matches.length > 0, 'Engine manifest is empty.')
   for (const rel of matches) {
+    if (/^https?:\/\//i.test(rel)) continue
     const file = path.join(root, 'src', rel)
     assert(fs.existsSync(file), `Engine manifest references missing file: ${rel}`)
     run(process.execPath, ['--check', file])
@@ -229,8 +230,8 @@ function main() {
     )
     assert(generatedModule.includes('"label": "例"'), 'Generated example label is not normalized.')
     assert(
-      generatedModule.includes('"source": "（合成测试来源）"'),
-      'Generated module drops the real source.'
+      !/"source"\s*:/.test(generatedModule),
+      'Generated module must not carry course source.'
     )
     assert(
       generatedModule.includes('"guidanceLayout": "interleaved"'),
@@ -258,6 +259,11 @@ function main() {
       'utf8'
     )
     assert(practiceModule.includes('"label": "练"'), 'Generated practice label is not 练.')
+    assert(
+      practiceModule.includes('"action": "测试练_作答_拍照"') &&
+        practiceModule.includes('"photoAnswer": true'),
+      'Generated practice module misses photo answer action.'
+    )
     assert(homeworkModule.includes('"label": "作业"'), 'Generated homework label is not 作业.')
     const firstHash = hashTree(generated)
     run(process.execPath, ['tools/aiclass.mjs', 'lesson:generate', fixtureCourseId])
@@ -265,11 +271,19 @@ function main() {
 
     run(process.execPath, ['tools/aiclass.mjs', 'course:export', fixtureCourseId, '--zip'])
     const exported = path.join(root, 'dist', fixtureCourseId)
-    const catalog = JSON.parse(fs.readFileSync(path.join(exported, 'action-catalog.json'), 'utf8'))
+    const catalog = JSON.parse(fs.readFileSync(path.join(exported, 'course', 'runtime', 'action-catalog.json'), 'utf8'))
     assert(catalog.some((item) => item.name === '测试_开始'), 'Generated catalog misses start action.')
     assert(catalog.some((item) => item.name === '测试_步骤01'), 'Generated catalog misses side effect.')
     assert(catalog.some((item) => item.name === '测试_快问快答_打开'), 'Generated catalog misses quickQA open action.')
     assert(catalog.some((item) => item.name === '测试_快问快答3_显示问题'), 'Generated catalog misses third quickQA question action.')
+    assert(catalog.some((item) => item.name === '测试练_作答_拍照'), 'Generated catalog misses photo answer action.')
+    assert(
+      catalog.findIndex((item) => item.name === '测试练_开始') <
+        catalog.findIndex((item) => item.name === '测试练_作答_拍照') &&
+      catalog.findIndex((item) => item.name === '测试练_作答_拍照') <
+        catalog.findIndex((item) => item.name === '测试练_步骤01'),
+      'Photo answer action must follow the practice start action.'
+    )
     assert(fs.existsSync(path.join(exported, 'debug', 'parent-shell', 'parent-shell.css')), 'Debug shell CSS missing.')
     assert(fs.existsSync(path.join(exported, 'debug', 'parent-shell', 'parent-shell.js')), 'Debug shell JS missing.')
 
@@ -279,25 +293,27 @@ function main() {
     assert(!index.includes('__RUNTIME_CONFIG_JSON__'), 'Runtime config placeholder leaked into export.')
     assert(!index.includes('AICLASS_REFERENCE_ONLY'), 'Reference content leaked into export.')
     assert(!index.includes('REFERENCE_ONLY_DO_NOT_COPY'), 'Reference sentinel leaked into export.')
-    assert(fs.existsSync(path.join(exported, 'authoring-snapshot', 'problem-a', 'plan.json')), 'Authoring snapshot missing.')
-    assert(fs.existsSync(path.join(exported, 'framework-source', 'tools', 'aiclass.mjs')), 'Generator source missing.')
-    assert(fs.existsSync(path.join(exported, 'framework-source', 'schemas', 'course.schema.json')), 'Schema source missing.')
-    assert(fs.existsSync(path.join(exported, 'course-source', fixtureCourseId, 'course.json')), 'Course source missing.')
+    assert(fs.existsSync(path.join(exported, 'course', 'content', 'problem-a', 'plan.json')), 'Editable plan missing.')
+    const output = JSON.parse(fs.readFileSync(path.join(exported, 'course', 'content', 'problem-a', 'output.json'), 'utf8'))
+    assert(output.sourceOfTruth === 'plan.json', 'Editable source marker missing.')
+    assert(output.problemId === 'problem-a', 'Output problem index missing.')
+    assert(!fs.existsSync(path.join(exported, 'framework-source')), 'Generator source should not be exported.')
+    assert(!fs.existsSync(path.join(exported, 'course-source')), 'Duplicate course source should not be exported.')
+    assert(!fs.existsSync(path.join(exported, 'reports')), 'Duplicate reports should not be exported.')
     assert(fs.existsSync(path.join(root, 'artifacts', `${fixtureCourseId}-0.1.0-source.zip`)), 'Source ZIP missing.')
 
     for (const rel of walk(exported, (name) => /\.(?:js|json|html|css|md)$/.test(name))) {
-      if (rel.replaceAll('\\', '/') === 'framework-source/tools/aiclass.mjs') continue
       const text = fs.readFileSync(path.join(exported, rel), 'utf8')
       assert(!text.includes('REFERENCE_ONLY_DO_NOT_COPY'), `Reference sentinel leaked into ${rel}.`)
     }
 
     validateJson(
-      path.join(exported, 'course.lock.json'),
+      path.join(exported, 'course', 'course.lock.json'),
       path.join(root, 'schemas', 'course-lock.schema.json')
     )
     run(process.execPath, ['tests/course-id-from-md.mjs'])
     run(process.execPath, ['tests/pipeline-board.test.mjs'])
-    run(process.execPath, ['scripts/smoke-test.mjs'], { cwd: exported })
+    run(process.execPath, ['scripts/smoke-test.mjs'], { cwd: path.join(exported, 'course') })
     console.log('All framework tests passed.')
   } finally {
     fs.rmSync(courseDir, { recursive: true, force: true })

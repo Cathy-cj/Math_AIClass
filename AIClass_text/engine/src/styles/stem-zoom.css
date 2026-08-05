@@ -49,6 +49,7 @@
 .course-container[data-layout="text-only"] .course-scroll-top[data-stem-expand="1"],
 .course-container[data-layout="top-split"] .course-scroll-top[data-stem-expand="1"],
 .course-container[data-layout="left-right"] .course-scroll-top[data-stem-expand="1"] {
+  z-index: 20;
   max-height: none;
   overflow: visible;
   min-height: 0;
@@ -266,7 +267,7 @@
 .course-container[data-layout="top-split"] .course-scroll-top.stem-expand-open,
 .course-container[data-layout="left-right"] .course-scroll-top.stem-expand-open {
   position: absolute;
-  z-index: 15;
+  z-index: 30;
   box-sizing: border-box;
   max-height: calc(100% - 16px);
   --stem-glass-bg: linear-gradient(

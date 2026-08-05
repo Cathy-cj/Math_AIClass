@@ -1,17 +1,8 @@
-// 填空 widget — push type: fill，支持 blank 片段与数学键盘
+// 填空 widget — 使用 MathLive 公式编辑器与课件悬浮键盘。
 ;(function () {
   function renderPart(container, part, block, enabled) {
     part = part || {}
     if (part.kind === 'blank' || part.type === 'blank') {
-      var input = document.createElement('input')
-      input.type = 'text'
-      input.className = 'lf-fill-input'
-      input.id = part.id || block.id || ''
-      input.autocomplete = 'off'
-      input.placeholder = part.placeholder || ''
-      if (part.width) {
-        input.style.width = typeof part.width === 'number' ? part.width + 'px' : String(part.width)
-      }
       var displayValue = null
       if (!enabled && part.answer != null) {
         displayValue = part.answer
@@ -20,18 +11,23 @@
       } else if (block.value != null) {
         displayValue = block.value
       }
-      if (displayValue != null) {
-        input.value = displayValue
-        if (!enabled) input.classList.add('lf-fill-input--revealed')
-        if (block.animateValue && block.__isCurrentStep) {
-          input.classList.add('lf-fill-input--anim-' + block.animateValue)
-        }
+
+      if (!window.AIClassComponent || typeof window.AIClassComponent.createLatexMathfield !== 'function') {
+        throw new Error('[fill widget] MathLive is required for fill input')
       }
-      input.readOnly = !enabled
-      input.disabled = !enabled
-      if (enabled) input.setAttribute('inputmode', 'text')
-      container.appendChild(input)
-      return input
+      var formulaField = window.AIClassComponent.createLatexMathfield({
+        id: part.id || block.id || '',
+        placeholder: part.placeholder || '',
+        width: part.width,
+        value: displayValue,
+        enabled: enabled
+      })
+      if (!enabled) formulaField.classList.add('lf-fill-input--revealed')
+      if (block.animateValue && block.__isCurrentStep) {
+        formulaField.classList.add('lf-fill-input--anim-' + block.animateValue)
+      }
+      container.appendChild(formulaField)
+      return formulaField
     }
     var span = document.createElement('span')
     span.textContent = part.value != null ? String(part.value) : ''
@@ -130,7 +126,12 @@
   }
 
   function collectValues(inputs) {
-    return inputs.map(function (input) { return input.value.trim() })
+    return inputs.map(function (input) {
+      if (input && input.tagName === 'MATH-FIELD') {
+        return window.AIClassComponent.getLatexValue(input)
+      }
+      return input.value.trim()
+    })
   }
 
   function submitFill(inputs, block, ctx) {
@@ -193,10 +194,6 @@
       if (!window.AIClassComponent || typeof window.AIClassComponent.createSubmitButton !== 'function') {
         throw new Error('[fill widget] AIClassComponent.createSubmitButton is required')
       }
-      if (typeof window.AIClassComponent.wireFillKeyboard !== 'function') {
-        throw new Error('[fill widget] AIClassComponent.wireFillKeyboard is required')
-      }
-
       var btn = window.AIClassComponent.createSubmitButton({
         text: block.submitText || '提交',
         onClick: function () { submitFill(inputs, block, ctx) }
@@ -210,10 +207,10 @@
         submitLine.appendChild(btn)
       }
 
-      window.AIClassComponent.wireFillKeyboard(wrap, block, inputs)
-
       setTimeout(function () {
-        if (inputs[0] && typeof inputs[0].focus === 'function') inputs[0].focus()
+        if (inputs[0] && typeof inputs[0].focus === 'function') {
+          inputs[0].focus()
+        }
       }, 0)
     }
 

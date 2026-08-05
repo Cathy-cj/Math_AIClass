@@ -55,4 +55,11 @@
     if (!ready) { pending.push(rootEl); return }
     renderNow(rootEl)
   }
+
+  /** 写入纯文本并强制 KaTeX 渲染（识别 $...$ / $$...$$） */
+  ns.setText = function (el, text) {
+    if (!el) return
+    el.textContent = text == null ? '' : String(text)
+    ns.render(el)
+  }
 })()

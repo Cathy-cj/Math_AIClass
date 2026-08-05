@@ -16,7 +16,6 @@
     padding: 120,
     topPadding: 40,
     active: false,
-    kbExtra: 0,
     alignStart: false,
     scrollPastEl: null,
     scrollPastGap: 8,
@@ -318,7 +317,7 @@
     var scrollRect = scrollEl.getBoundingClientRect()
     var scaleY = getScrollElScaleY(scrollEl)
     var bottom = measureBottomInScroll(scrollEl, el)
-    var visualDelta = bottom - scrollRect.bottom + padding + followState.kbExtra
+    var visualDelta = bottom - scrollRect.bottom + padding
     var target = scrollEl.scrollTop + visualDelta / scaleY
     var maxScroll = Math.max(0, scrollEl.scrollHeight - scrollEl.clientHeight)
     target = Math.max(0, Math.min(target, maxScroll))
@@ -491,7 +490,7 @@
     var scaleY = getScaleY(stage)
     var relBottom = (bottom - stageRect.top) / scaleY
     var absBottom = relBottom + stage.scrollTop
-    var target = absBottom - stage.clientHeight + followState.padding + followState.kbExtra
+    var target = absBottom - stage.clientHeight + followState.padding
     var maxScroll = Math.max(0, stage.scrollHeight - stage.clientHeight)
     return Math.max(0, Math.min(target, maxScroll))
   }
@@ -626,7 +625,6 @@
     followState.pageEl = resolvePageEl(anchor, opts)
     followState._innerScrollEl = innerEl
     followState._innerAlignStart = !!opts.alignStart
-    followState.kbExtra = opts.keyboardExtra != null ? opts.keyboardExtra : 0
     followState.padding = opts.padding != null
       ? opts.padding
       : (isStageScroll(scrollEl) ? 120 : INNER_SCROLL_BOTTOM_INSET)

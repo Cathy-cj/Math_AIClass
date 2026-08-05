@@ -83,7 +83,6 @@
       style: meta.style || {},
       figure: resolveFigure(meta.figure),
       head: meta.head != null ? meta.head : null,
-      source: meta.source != null ? meta.source : null,
       difficulty: meta.difficulty != null ? meta.difficulty : null,
       difficultyMax: meta.difficultyMax != null ? meta.difficultyMax : null,
       textAccumulate: meta.textAccumulate === true,
@@ -246,8 +245,8 @@
     })
     if (flowEl) flowEl.innerHTML = ''
     openContainers = {}
-    if (window.AIClassComponent && typeof window.AIClassComponent.hideFloatingMathKeyboard === 'function') {
-      window.AIClassComponent.hideFloatingMathKeyboard()
+    if (window.AIClassComponent && typeof window.AIClassComponent.resetMathKeyboard === 'function') {
+      window.AIClassComponent.resetMathKeyboard()
     }
     unlockStageForInnerBodyScroll()
     syncStackMode()

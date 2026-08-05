@@ -38,9 +38,18 @@ try {
 const debugHtml = path.join(exported, 'debug', 'parent-shell', 'index.html')
 const debugCss = path.join(exported, 'debug', 'parent-shell', 'parent-shell.css')
 const debugJs = path.join(exported, 'debug', 'parent-shell', 'parent-shell.js')
+const editMapFile = path.join(exported, 'debug', 'edit-map.json')
 
-for (const file of [debugHtml, debugCss, debugJs]) {
+for (const file of [debugHtml, debugCss, debugJs, editMapFile]) {
   if (!fs.existsSync(file)) throw new Error(`Debug shell asset missing: ${file}`)
+}
+const editMap = JSON.parse(fs.readFileSync(editMapFile, 'utf8'))
+const actionCatalog = JSON.parse(fs.readFileSync(path.join(exported, 'course', 'runtime', 'action-catalog.json'), 'utf8'))
+if (!editMap.actions.length) throw new Error('Debug edit map has no editable actions.')
+for (const entry of editMap.actions) {
+  if (!entry.editable || !actionCatalog.some((item) => item.name === entry.action)) {
+    throw new Error(`Debug edit map action is inconsistent: ${entry.action}`)
+  }
 }
 
 const launchOptions = process.platform === 'win32'
@@ -74,12 +83,7 @@ const result = await page.evaluate(async () => {
   var styles = getComputedStyle(document.querySelector('.toolbar'))
   var grouped = document.querySelectorAll('.zone-block.collapsible-block')
   var actionButtons = document.querySelectorAll('.action-btn')
-  var search = document.getElementById('search')
   var logWrap = document.getElementById('logWrap')
-
-  search.value = '步骤01'
-  search.dispatchEvent(new Event('input', { bubbles: true }))
-  var filteredCount = document.querySelectorAll('.action-btn').length
 
   document.getElementById('btnToggleLog').click()
   var logExpanded = !logWrap.classList.contains('collapsed')
@@ -93,11 +97,10 @@ const result = await page.evaluate(async () => {
     toolbarDisplay: styles.display,
     groupedCount: grouped.length,
     actionCount: actionButtons.length,
-    filteredCount: filteredCount,
     logExpanded: logExpanded,
     sidebarHead: document.getElementById('sidebarHead').textContent,
-    hasManualInput: !!document.getElementById('actionInput'),
-    hasReload: !!document.getElementById('btnReload')
+    hasReload: !!document.getElementById('btnReload'),
+    hasFolderConnect: !!document.getElementById('btnConnectFolder')
   }
 })
 
@@ -107,9 +110,8 @@ if (errors.length) throw new Error(`Debug shell page errors:\n${errors.join('\n'
 if (result.toolbarDisplay !== 'flex') throw new Error('Debug shell CSS did not load.')
 if (result.groupedCount < 1) throw new Error('Debug shell did not render grouped catalog zones.')
 if (result.actionCount < 2) throw new Error('Debug shell action list is too small.')
-if (result.filteredCount < 1) throw new Error('Debug shell search filter failed.')
 if (!result.logExpanded) throw new Error('Debug shell log panel did not expand.')
-if (!result.hasManualInput || !result.hasReload) throw new Error('Debug shell toolbar controls missing.')
+if (!result.hasReload || !result.hasFolderConnect) throw new Error('Debug shell toolbar controls missing.')
 
 console.log('Debug shell smoke passed: ' + courseId)
 } finally {

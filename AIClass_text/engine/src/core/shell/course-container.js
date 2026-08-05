@@ -376,33 +376,36 @@
     return out
   }
 
-
-  CourseContainer.prototype._recognitionResultTarget = function () {
+  CourseContainer.prototype._photoAnswerTarget = function () {
     if (this.layout === 'left-right' || this.layout === 'text-only') {
       return this.scrollStackEl || this.scrollRightEl
     }
-    // top-split：挂在左栏正文讲解流顶部，随后随自动滚动顶出视口
-    if (this.layout === 'top-split') {
-      return this.scrollLeftEl || this.scrollEl
-    }
+    if (this.layout === 'top-split') return this.scrollRightEl || this.scrollEl
     return this.scrollEl
   }
 
-  CourseContainer.prototype.showRecognitionResult = function (content) {
-    var target = this._recognitionResultTarget()
-    if (!target || !window.AIClassRecognitionResult) return null
+  CourseContainer.prototype.showPhotoAnswer = function (onPhotoRequest) {
+    var target = this._photoAnswerTarget()
+    if (!target || !window.AIClassPhotoAnswer) return null
 
-    this.clearRecognitionResult()
-    var card = AIClassRecognitionResult.create(content)
+    this.clearPhotoAnswer()
+    var card = AIClassPhotoAnswer.create(onPhotoRequest)
     target.insertBefore(card, target.firstChild)
     if (target.scrollTop != null) target.scrollTop = 0
     return card
   }
 
-  CourseContainer.prototype.clearRecognitionResult = function () {
-    var target = this._recognitionResultTarget()
+  CourseContainer.prototype.showPhotoResult = function (content) {
+    var target = this._photoAnswerTarget()
+    if (!target || !window.AIClassPhotoAnswer) return false
+    var card = target.querySelector('.cc-photo-answer')
+    return !!(card && AIClassPhotoAnswer.showResult(card, content))
+  }
+
+  CourseContainer.prototype.clearPhotoAnswer = function () {
+    var target = this._photoAnswerTarget()
     if (!target || !target.querySelectorAll) return
-    target.querySelectorAll('.cc-recognition-result').forEach(function (node) {
+    target.querySelectorAll('.cc-photo-answer').forEach(function (node) {
       if (node.parentNode) node.parentNode.removeChild(node)
     })
   }
@@ -460,10 +463,14 @@
       var sid = block.getAttribute('data-step-id')
       var isActive = activeStepId != null && String(sid) === String(activeStepId)
       block.setAttribute('data-is-current-step', isActive ? 'true' : 'false')
+      ;(block.querySelectorAll ? block.querySelectorAll('.aic-button-submit') : []).forEach(function (button) {
+        button.hidden = !isActive
+        button.disabled = !isActive
+      })
     })
     this._syncChoiceBlocks(activeStepId)
-    if (window.AIClassComponent && typeof window.AIClassComponent.syncFillKeyboardVisibility === 'function') {
-      window.AIClassComponent.syncFillKeyboardVisibility()
+    if (window.AIClassComponent && typeof window.AIClassComponent.syncMathKeyboard === 'function') {
+      window.AIClassComponent.syncMathKeyboard()
     }
   }
 
@@ -876,14 +883,13 @@
     container.scrollEl = scroll
     container.figureSlot = figureSlot
 
-    if ((options.head || options.source || options.difficulty) && container.scrollEl) {
+    if ((options.head || options.difficulty) && container.scrollEl) {
       container.scrollEl.classList.add('course-scroll-top--labeled')
       var stemHead = null
       if (window.AIClassComponent &&
           typeof window.AIClassComponent.createCourseStemHead === 'function') {
         stemHead = window.AIClassComponent.createCourseStemHead({
           head: options.head || null,
-          source: options.source || null,
           difficulty: options.difficulty,
           difficultyMax: options.difficultyMax
         })
@@ -898,12 +904,6 @@
           labelNode.className = 'course-label'
           labelNode.textContent = options.head
           group.appendChild(labelNode)
-        }
-        if (options.source) {
-          var sourceNode = document.createElement('span')
-          sourceNode.className = 'course-source'
-          sourceNode.textContent = options.source
-          group.appendChild(sourceNode)
         }
         stemHead.appendChild(group)
       }

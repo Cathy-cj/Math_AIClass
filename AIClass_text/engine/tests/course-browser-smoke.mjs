@@ -20,7 +20,7 @@ const generated = spawnSync(process.execPath, ['tools/aiclass.mjs', 'course:expo
 if (generated.status !== 0) throw new Error(generated.stderr || generated.stdout)
 
 const exported = path.join(root, 'dist', courseId)
-const catalog = JSON.parse(fs.readFileSync(path.join(exported, 'action-catalog.json'), 'utf8'))
+const catalog = JSON.parse(fs.readFileSync(path.join(exported, 'course', 'runtime', 'action-catalog.json'), 'utf8'))
 const actions = catalog
   .map((item) => item.name)
   .filter((name) => name.startsWith(actionPrefix) && !name.includes('快问快答'))

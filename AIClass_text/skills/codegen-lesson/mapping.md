@@ -11,7 +11,6 @@ window.__lessonRegisterModule({
   containers: [{
     id: 'c_{id}',
     label: '例1',          // codegen 按 moduleType + 课程内顺序自动生成
-    source: '（真实来源）', // 原样来自 plan.source
     layout: 'text-only',
     // text-only：不上屏 problemBrief；审题用 section 已知/求
     guidanceChain: [ /* 从 plan.guidanceChain */ ],
@@ -72,6 +71,25 @@ text-only 多环节使用 `interleaved`：每个 step 的 `group` 对应一个
 生成器只按 `guidanceChain + group` 路由；`phase` 和 stage slug 均为题内语义，不参与分支判断。`group: 0` 仅为开场且不显示环节。text-only 审题内容以 push 中的 `section`「已知/求」为准，不嵌入 `problemBrief`。
 
 高亮与标签只靠 plan 传参（引擎 CSS 已固化）：题干 `stemClass` 加 `--lit`→红；讲解 `--em`→黄；得数 `--green`→绿。详见 [text-only-marks.md](../lesson-plan/text-only-marks.md)。
+
+## 练习题拍照作答
+
+课程模块不生成拍照作答 `push`。生成器会为每个练习题追加
+`{actionPrefix}_作答_拍照` action；宿主在练习题入口 action 成功后派发它，课件显示
+“作答结果 / 拍照上传”组件。点击上传时课件上报：
+
+```js
+{ type: 'user_submitted', kind: 'course_photo' }
+```
+
+宿主完成外部手写板/OCR 后，向 iframe 回传：
+
+```js
+{ type: 'photo_result', value: '识别到：$x=3$，验算：$$2x+1=7$$' }
+```
+
+`value` 是文字和 `$...$` / `$$...$$` LaTeX 的混合内容。结果只填入最近一次派发拍照
+action 的练习题区域，不参与前端判题或 action 推进；课件回传 `answer_result_shown`。
 
 ## 接线清单
 
