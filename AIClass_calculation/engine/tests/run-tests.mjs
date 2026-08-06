@@ -200,9 +200,9 @@ function checkReplaceKeyInPlace() {
     'Interaction submit must use normalized protocol kinds without status.'
   )
   assert(
-    executionLog.includes("payload && payload.type === 'user_submitted'") &&
-      !executionLog.includes("Object.assign({\n      source: boot.messageSource || 'aiclass-page'\n    }, payload)"),
-    'Execution log must not add source to user_submitted.'
+    executionLog.includes('window.parent.postMessage(payload') &&
+      !executionLog.includes('source:'),
+    'Execution log must not attach source to messages.'
   )
 }
 

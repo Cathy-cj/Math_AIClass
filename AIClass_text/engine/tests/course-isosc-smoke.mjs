@@ -38,7 +38,7 @@ await page.evaluate(() => new Promise((resolve, reject) => {
   const timer = setTimeout(() => reject(new Error('Timed out waiting for help catalog.')), 15000)
   window.addEventListener('message', function onMessage(event) {
     const data = event.data || {}
-    if (data.source !== 'aiclass-page' || data.type !== 'help') return
+    if (data.type !== 'help') return
     clearTimeout(timer)
     window.removeEventListener('message', onMessage)
     resolve()

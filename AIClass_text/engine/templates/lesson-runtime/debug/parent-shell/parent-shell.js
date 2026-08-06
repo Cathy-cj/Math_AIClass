@@ -1,6 +1,5 @@
 // AIClass parent-shell — 通用协议调试壳（无硬编码课纲树）
 ;(function () {
-  var MESSAGE_SOURCE = 'aiclass-page'
   var RESET_ACTION = 'course:reset'
   var COLLAPSE_KEY = 'parent-shell-collapse-v2'
   var SIDEBAR_WIDTH_KEY = 'parent-shell-sidebar-width'
@@ -1037,7 +1036,7 @@
 
   window.addEventListener('message', function (e) {
     var d = e.data
-    if (!d || (d.source !== MESSAGE_SOURCE && d.type !== 'user_submitted')) return
+    if (!d) return
     handleInbound(d)
   })
 

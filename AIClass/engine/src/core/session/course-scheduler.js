@@ -416,13 +416,7 @@
     var self = this
     var logPayload = {
       type: 'concept_sheet_dismissed',
-      status: 'ok',
-      conceptId: id
-    }
-    if (opts.autoDismiss) {
-      logPayload.autoDismiss = true
-      logPayload.reason = opts.reason || 'auto'
-      if (opts.triggerAction) logPayload.triggerAction = opts.triggerAction
+      status: 'ok'
     }
     AIClassConceptSheetFlow.teardown(function () {
       self.conceptSheetOpenId = null
@@ -521,11 +515,7 @@
 
     this.log.post({
       type: 'side_effect_ok',
-      status: 'ok',
-      action: actionName,
-      anchorStepId: renderMeta.anchorStepId || null,
-      renderModuleId: renderMeta.moduleId,
-      retargeted: !!retryTarget
+      status: 'ok'
     })
 
     return { ok: true, sideEffect: true, action: actionName, retargeted: !!retryTarget }
@@ -665,8 +655,7 @@
     this.schedulerState = STATE_PAUSED
     this.log.post({
       type: 'scheduler_paused',
-      status: 'ok',
-      checkpoint: clonePointer(this.checkpoint)
+      status: 'ok'
     })
     return { ok: true, checkpoint: this.checkpoint }
   }
@@ -681,9 +670,7 @@
     this.schedulerState = STATE_ACTIVE
     this.log.post({
       type: 'scheduler_resumed',
-      status: 'ok',
-      checkpoint: null,
-      nextStepId: this.checkpoint.nextStepId
+      status: 'ok'
     })
     this.checkpoint = null
     return { ok: true }
@@ -717,9 +704,7 @@
 
     this.log.post({
       type: 'module_switched',
-      status: 'ok',
-      moduleId: targetModuleId,
-      nextStepId: this.pointer ? this.pointer.stepId : null
+      status: 'ok'
     })
     return { ok: true, moduleId: targetModuleId, nextStepId: this.pointer.stepId }
   }
@@ -1077,9 +1062,7 @@
     this.feynmanOpenId = String(config.id)
     this.log.post({
       type: 'feynman_shown',
-      status: 'ok',
-      feynmanId: config.id,
-      cardOrder: result.cardOrder
+      status: 'ok'
     })
     return { ok: true, feynmanId: config.id, cardOrder: result.cardOrder }
   }
@@ -1102,8 +1085,7 @@
     AIClassFeynmanFlow.teardown(function () {
       self.log.post({
         type: 'feynman_dismissed',
-        status: 'ok',
-        feynmanId: id
+        status: 'ok'
       })
     })
     return { ok: true, feynmanId: id }
@@ -1164,11 +1146,7 @@
     this.conceptSheetOpenId = String(mountConfig.id)
     this.log.post({
       type: mountResult && mountResult.updated ? 'concept_sheet_updated' : 'concept_sheet_shown',
-      status: 'ok',
-      conceptId: mountConfig.id,
-      action: config.action,
-      topicAction: config.action,
-      moduleId: config.moduleId || null
+      status: 'ok'
     })
     return {
       ok: true,
@@ -1216,8 +1194,7 @@
     }
     this.log.post({
       type: 'quick_qa_opened',
-      status: 'ok',
-      moduleId: meta.moduleId
+      status: 'ok'
     })
     return { ok: true }
   }
@@ -1237,9 +1214,7 @@
     }
     this.log.post({
       type: 'quick_qa_question_shown',
-      status: 'ok',
-      qaId: qaItem.id,
-      moduleId: meta.moduleId
+      status: 'ok'
     })
     return { ok: true, qaId: qaItem.id }
   }
@@ -1255,8 +1230,7 @@
     window.AIClassQuickQA.showAnswer(qaItem)
     this.log.post({
       type: 'quick_qa_answer_shown',
-      status: 'ok',
-      qaId: qaItem.id
+      status: 'ok'
     })
     return { ok: true, qaId: qaItem.id }
   }
@@ -1268,10 +1242,9 @@
     window.AIClassQuickQA.hide()
     this.log.post({
       type: 'quick_qa_hidden',
-      status: 'ok',
-      qaId: qaId
+      status: 'ok'
     })
-    return { ok: true, qaId: qaId }
+    return { ok: true }
   }
 
   CourseScheduler.prototype.showPhotoAnswer = function (actionName) {
@@ -1313,7 +1286,7 @@
       moduleId: meta.moduleId,
       containerIdx: meta.containerIdx
     }
-    this.log.post({ type: 'side_effect_ok', status: 'ok', action: actionName, photoAnswer: true })
+    this.log.post({ type: 'side_effect_ok', status: 'ok' })
     return { ok: true, action: actionName }
   }
 
@@ -1334,10 +1307,7 @@
     }
     this.log.post({
       type: 'answer_result_shown',
-      status: 'ok',
-      action: target.action,
-      moduleId: target.moduleId,
-      containerIdx: target.containerIdx
+      status: 'ok'
     })
     return { ok: true, action: target.action }
   }
@@ -1355,7 +1325,6 @@
       var payload = this.getHelpPayload()
       this.log.post({
         type: 'help',
-        action: actionName,
         status: 'ok',
         data: payload
       })

@@ -73,7 +73,7 @@ const result = await page.evaluate(async () => {
     }, 12000)
     window.addEventListener('message', function onMessage(event) {
       var data = event.data || {}
-      if (data.source !== 'aiclass-page' || data.type !== 'help') return
+      if (data.type !== 'help') return
       clearTimeout(timer)
       window.removeEventListener('message', onMessage)
       resolve()
