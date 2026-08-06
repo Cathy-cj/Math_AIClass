@@ -27,7 +27,7 @@ engine/workspace.local.json
 engine/restored/
 
 # Synced debug shell at monorepo root (from course:export)
-debug/
+/debug/
 
 # Logs
 *.log
