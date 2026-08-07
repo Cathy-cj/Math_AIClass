@@ -7,7 +7,7 @@
 在 **`engine/`** 下创建：
 
 ```bash
-npm run course:new -- my-course "课程标题"
+npm run course:new -- my-course --grade 7 "课程标题"
 npm run pipeline:board -- my-course
 ```
 

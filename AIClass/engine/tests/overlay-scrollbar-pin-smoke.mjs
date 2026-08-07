@@ -1,11 +1,19 @@
 // 验收：host===scrollEl 时 overlay 轨道须钉在可视区，不随 scrollTop 滚走
+import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { chromium } from 'playwright'
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
-const jsPath = path.join(root, 'src', 'components', 'overlay-scrollbar.js')
-const cssPath = path.join(root, 'src', 'styles', 'overlay-scrollbar.css')
+const sharedEngineRoot = path.join(root, '..', '..', 'shared', 'engine')
+// shared 抽取后共享文件不在 repo src，导出时装配；测试按 repo 优先、shared 兜底解析
+function resolveSrc(rel) {
+  const local = path.join(root, 'src', rel)
+  if (fs.existsSync(local)) return local
+  return path.join(sharedEngineRoot, 'src', rel)
+}
+const jsPath = resolveSrc('components/overlay-scrollbar.js')
+const cssPath = resolveSrc('styles/overlay-scrollbar.css')
 
 const launchOptions = process.platform === 'win32'
   ? { channel: 'msedge', headless: true }

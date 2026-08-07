@@ -44,7 +44,7 @@
 
 ## （可选）导出
 
-- [ ] `course:export -- <id> --zip`；`engine/dist/<id>/index.html` 可双击；vendor（含 JSXGraph）可用
+- [ ] `course:export -- <id> --zip`；`dist/<grade>/<id>/index.html` 可双击；vendor（含 JSXGraph）可用
 
 ## 暂缓
 

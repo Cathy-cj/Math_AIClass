@@ -20,9 +20,9 @@ MD 输入时 `<courseId>` **必须**来自 md 文件名（去 `.md`），见 [na
 ## 步骤摘要
 
 1. 在 `engine/` 建课壳（若目录已存在则跳过）：
-   - `npm run course:new -- <courseId> "课程标题"`
-   - 或 `npm run course:new -- --from-md <path/to/file.md> "课程标题"`
-   - 或 `npm run course:new -- <path/to/file.md> "课程标题"`（参数以 `.md` 结尾时自动推导 courseId）
+   - `npm run course:new -- <courseId> --grade <n> "课程标题"`（`--grade` 必填，dist 产物按年级分目录，如 `--grade 8` → `dist/8/<courseId>/`）
+   - 或 `npm run course:new -- --from-md <path/to/file.md> --grade <n> "课程标题"`
+   - 或 `npm run course:new -- <path/to/file.md> --grade <n> "课程标题"`（参数以 `.md` 结尾时自动推导 courseId）
 2. 配置 `engine/workspace.local.json`（不提交）指向 authoring 根
 3. 在 `courses/<courseId>/course.json` 登记 `problemId` / `order` / `actionPrefix`（唯一）
    - 标准教学单元只登记两道正式题：`example`（例题）→ `practice`（练题）。

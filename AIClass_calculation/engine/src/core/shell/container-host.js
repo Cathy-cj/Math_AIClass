@@ -286,8 +286,8 @@
     })
     if (flowEl) flowEl.innerHTML = ''
     openContainers = {}
-    if (window.AIClassComponent && typeof window.AIClassComponent.hideFloatingMathKeyboard === 'function') {
-      window.AIClassComponent.hideFloatingMathKeyboard()
+    if (window.AIClassComponent && typeof window.AIClassComponent.resetMathKeyboard === 'function') {
+      window.AIClassComponent.resetMathKeyboard()
     }
     unlockStageForSplitLayout()
     syncStackMode()

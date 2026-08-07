@@ -11,13 +11,18 @@
   var pageScale = 1
   var scaleController = null
 
-  if (!window.MathfieldElement) throw new Error('[MathLive] CDN runtime failed to load')
+  var hasMathLive = !!window.MathfieldElement
+  if (!hasMathLive) {
+    console.warn('[MathLive] CDN runtime failed to load; using plain-text LaTeX fallback')
+  }
   var config = window.AICLASS_RUNTIME_CONFIG || {}
   var base = config.mathliveBase || 'https://cdn.jsdmirror.com/npm/mathlive@0.110.0/'
   if (base.charAt(base.length - 1) !== '/') base += '/'
-  window.MathfieldElement.fontsDirectory = null
-  window.MathfieldElement.soundsDirectory = null
-  if (!document.getElementById('aic-mathlive-fonts')) {
+  if (hasMathLive) {
+    window.MathfieldElement.fontsDirectory = null
+    window.MathfieldElement.soundsDirectory = null
+  }
+  if (hasMathLive && !document.getElementById('aic-mathlive-fonts')) {
     var fontStyle = document.createElement('link')
     fontStyle.id = 'aic-mathlive-fonts'
     fontStyle.rel = 'stylesheet'
@@ -187,9 +192,10 @@
 
   function showKeyboard(field) {
     if (field) activeField = field
-    if (!activeField || activeField.disabled || activeField.readOnly) return
+    if (!hasMathLive || !activeField || activeField.disabled || activeField.readOnly) return
     ensureFab().hidden = false
     var keyboard = ensurePanel()
+    if (!keyboard.hidden) return
     keyboard.hidden = false
     clampPanel()
   }
@@ -198,9 +204,23 @@
     if (panel) panel.hidden = true
   }
 
+  // 失焦后焦点若不在键盘面板、⌨ 按钮或其它可填公式框上，自动收起键盘。
+  function scheduleHideKeyboardOnBlur() {
+    if (!panel || panel.hidden) return
+    setTimeout(function () {
+      if (!panel || panel.hidden) return
+      var el = document.activeElement
+      if (!el || el === fab) return
+      if (panel.contains(el)) return
+      if (el.classList && el.classList.contains('aic-math-field') && !el.disabled && !el.readOnly) return
+      hideKeyboard()
+    }, 0)
+  }
+
   function clearActiveField() {
     if (!activeField || activeField.disabled || activeField.readOnly) return
-    activeField.setValue('')
+    if (typeof activeField.setValue === 'function') activeField.setValue('')
+    else activeField.value = ''
     activeField.focus()
   }
 
@@ -234,21 +254,18 @@
     var line = ''
     var columns = 0
     var depth = 0
-
     function flush() {
       if (!line) return
       lines.push(line)
       line = ''
       columns = 0
     }
-
     tokens.forEach(function (token) {
       line += token
       columns += token.charAt(0) === '\\' ? 2 : 1
       if (token === '{') depth += 1
       if (token === '}') depth = Math.max(0, depth - 1)
       if (depth !== 0 || columns < maxColumns) return
-      // 运算符后断行优先；连续数字等无断点内容到达上限时也必须断行。
       if (/^(?:[+\-=,]|\\times|\\div|\\cdot|\\pm)$/.test(token) || columns >= maxColumns + 4) flush()
     })
     flush()
@@ -256,18 +273,14 @@
   }
 
   function updateAutoLines(field) {
-    if (!field || !field.isConnected || field.__aicAutoLineUpdating) return
+    if (!hasMathLive || !field || !field.isConnected || field.__aicAutoLineUpdating) return
     var content = field.shadowRoot && field.shadowRoot.querySelector('.ML__content')
     if (!content || content.clientWidth < 1) return
     var latex = String(field.getValue('latex') || '')
     var rawLatex = field.__aicAutoWrapped ? unwrapAutoLines(latex) : latex
-    var overflows = content.scrollWidth > content.clientWidth + 1
-
-    if (!overflows) return
-    var maxColumns = Math.max(8, Math.floor(content.clientWidth / 16))
-    var lines = splitLatexLines(rawLatex, maxColumns)
+    if (content.scrollWidth <= content.clientWidth + 1) return
+    var lines = splitLatexLines(rawLatex, Math.max(8, Math.floor(content.clientWidth / 16)))
     if (lines.length < 2) return
-
     field.__aicAutoLineUpdating = true
     field.setValue('\\displaylines{' + lines.join(' \\\\ ') + '}')
     field.__aicAutoWrapped = true
@@ -275,16 +288,14 @@
   }
 
   function scheduleAutoLines(field) {
-    window.requestAnimationFrame(function () {
-      updateAutoLines(field)
-    })
+    window.requestAnimationFrame(function () { updateAutoLines(field) })
   }
 
   ns.createLatexMathfield = function (options) {
     options = options || {}
-    var field = document.createElement('math-field')
+    var field = document.createElement(hasMathLive ? 'math-field' : 'input')
     field.className = 'lf-fill-input aic-math-field'
-    if (field.shadowRoot) {
+    if (hasMathLive && field.shadowRoot) {
       var overflowStyle = document.createElement('style')
       overflowStyle.textContent = '.ML__container{max-width:100%}' +
         '.ML__content{overflow:hidden!important}'
@@ -292,30 +303,40 @@
     }
     field.id = options.id || ''
     field.setAttribute('aria-label', options.ariaLabel || '公式填空')
-    field.setAttribute('smart-fence', '')
+    if (hasMathLive) field.setAttribute('smart-fence', '')
+    else field.type = 'text'
     if (options.width) field.style.width = typeof options.width === 'number' ? options.width + 'px' : String(options.width)
     if (options.value != null) field.value = String(options.value)
     field.readOnly = !options.enabled
     field.disabled = !options.enabled
     field.addEventListener('focus', function () { showKeyboard(field) })
     field.addEventListener('click', function () { showKeyboard(field) })
-    field.addEventListener('input', function () {
-      if (!field.__aicAutoLineUpdating) scheduleAutoLines(field)
-    })
+    field.addEventListener('blur', scheduleHideKeyboardOnBlur)
+    if (hasMathLive) {
+      field.addEventListener('input', function () {
+        if (!field.__aicAutoLineUpdating) scheduleAutoLines(field)
+      })
+    }
     window.requestAnimationFrame(function () {
       if (!field.isConnected) return
-      field.menuItems = []
-      scheduleAutoLines(field)
+      if (hasMathLive) field.menuItems = []
+      if (hasMathLive) scheduleAutoLines(field)
     })
     return field
   }
 
   ns.getLatexValue = function (field) {
-    var latex = String(field && field.getValue ? field.getValue('latex') : '')
+    var latex = String(field && field.getValue ? field.getValue('latex') : field && field.value || '')
     return (field && field.__aicAutoWrapped ? unwrapAutoLines(latex) : latex).trim()
   }
 
   ns.syncMathKeyboard = function () {
+    if (!hasMathLive) {
+      activeField = null
+      if (fab) fab.hidden = true
+      hideKeyboard()
+      return
+    }
     var field = document.querySelector('.aic-math-field:not([disabled])')
     activeField = field || null
     ensureFab().hidden = !field

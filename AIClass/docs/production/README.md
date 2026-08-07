@@ -70,7 +70,7 @@ course:export
 | ③ 编排 | `courses/` | 一门 `courses/<id>/` | problemId / order / actionPrefix 唯一 |
 | 落地 | `courses/` modules | figure + 模块 | — |
 | ④ 生成预览 | `engine/` 工具 | `.generated/`、可预览 | check + preview 验收（`previewOk`） |
-| （可选）导出 | `engine/` | `engine/dist/<id>/` | 本地可双击运行 |
+| （可选）导出 | `engine/` | 仓库根 `dist/<grade>/<id>/` | 本地可双击运行 |
 
 门禁见 [checklist.md](./checklist.md)。
 

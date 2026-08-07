@@ -4,14 +4,15 @@ import path from 'node:path'
 import { spawnSync } from 'node:child_process'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { chromium } from 'playwright'
+import { distDir } from './dist-path.mjs'
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
 const courseId = 'fixture-minimal'
-const exported = path.join(root, 'dist', courseId)
-const indexHtml = path.join(exported, 'index.html')
+let exported = distDir(root, courseId)
+let indexHtml = exported ? path.join(exported, 'index.html') : null
 const OVERFLOW_SLACK_PX = 16
 
-if (!fs.existsSync(indexHtml)) {
+if (!indexHtml || !fs.existsSync(indexHtml)) {
   const result = spawnSync(process.execPath, ['tests/run-tests.mjs'], {
     cwd: root,
     encoding: 'utf8'
@@ -19,6 +20,8 @@ if (!fs.existsSync(indexHtml)) {
   if (result.status !== 0) {
     throw new Error(result.stderr || result.stdout || 'run-tests failed')
   }
+  exported = distDir(root, courseId)
+  indexHtml = path.join(exported, 'index.html')
 }
 
 const launchOptions = process.platform === 'win32'

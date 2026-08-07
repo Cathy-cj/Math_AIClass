@@ -46,6 +46,8 @@
     'https://cdn.jsdmirror.com/npm/mathlive@0.110.0/mathlive.min.js',
     'components/mathlive.js',
     'components/latex.js',
+    'components/calc-tex-split.js',
+    'components/calc-line-fit.js',
     'components/recognition-result.js',
     'components/hand-hint.js',
     'components/oral-input.js',

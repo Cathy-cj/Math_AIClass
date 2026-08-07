@@ -253,16 +253,18 @@ function validatePlanSemantics(plan) {
       `Plan groups must fully cover 1..guidanceChain.length: ${plan.id}`
     )
   }
-  const invalidGroupZero = plan.steps.find((step) =>
-    (step.group || 0) === 0 &&
-    step.id !== 'start' &&
-    !String(step.action || '').endsWith('_开始')
-  )
+  const invalidGroupZero = plan.layout === 'top-split'
+    ? null
+    : plan.steps.find((step) =>
+        (step.group || 0) === 0 &&
+        step.id !== 'start' &&
+        !String(step.action || '').endsWith('_开始')
+      )
   if (invalidGroupZero) {
     throw new Error(`Only the opening step may use group 0: ${plan.id}/${invalidGroupZero.id}`)
   }
 
-  if (plan.moduleType !== 'knowledge') {
+  if (plan.moduleType !== 'knowledge' && plan.layout !== 'top-split') {
     const brief = plan.problemBrief
     const known = brief && (Array.isArray(brief.known) ? brief.known : [brief.known])
     if (!brief || !known || !known.some((item) => String(item || '').trim()) ||
@@ -357,6 +359,65 @@ function validatePlanSemantics(plan) {
       }
     }
   }
+
+  if (plan.layout === 'top-split') {
+    validateTopSplitStructure(plan)
+  }
+}
+
+function validateTopSplitStructure(plan) {
+  const steps = plan.steps || []
+  const retains = (step, id) => {
+    const rp = step && step.retainPush
+    if (rp == null) return false
+    const list = Array.isArray(rp) ? rp : [rp]
+    return list.some((value) => String(value) === String(id))
+  }
+  const pinBlocks = (step) => (step.push || [])
+    .filter((b) => /calc-key-pin/.test(String(b.class || ''))).length
+
+  const keyStart = steps.find((s) => /_详解_起$/.test(s.action || ''))
+  if (!keyStart) return // 极简 top-split（无详解阶段）不强制
+
+  // 详解_起：必须右栏钉 calc-key-pin；禁止 retainPush（否则要点区不清、右钉错位）
+  if (pinBlocks(keyStart) < 1) {
+    throw new Error(`top-split 详解_起 must pin calc-key-pin: ${plan.id}/${keyStart.id}`)
+  }
+  if (keyStart.retainPush != null) {
+    throw new Error(`top-split 详解_起 must not carry retainPush: ${plan.id}/${keyStart.id}`)
+  }
+
+  const pointAcc = []
+  const detailIds = []
+  let inDetail = false
+  for (const step of steps) {
+    const action = step.action || ''
+    if (step.id === 'start') continue
+    if (/详解_起$/.test(action)) { inDetail = true; continue }
+    if (inDetail) {
+      if (/详解_步/.test(action) || /答案$/.test(action)) {
+        const need = [keyStart.id, ...detailIds]
+        const missing = need.filter((id) => !retains(step, id))
+        if (missing.length) {
+          throw new Error(
+            `top-split ${/答案$/.test(action) ? '答案' : '详解步'} must retainPush [详解_起 + prior 详解步] (missing ${missing.join(',')}): ${plan.id}/${step.id}`
+          )
+        }
+        if (/详解_步/.test(action)) detailIds.push(step.id)
+      }
+      continue
+    }
+    // 要点阶段：除首个外，保留前序所有要点步，避免阶段内容被后续步清掉
+    if (/要点_/.test(action)) {
+      const missing = pointAcc.filter((id) => !retains(step, id))
+      if (missing.length) {
+        throw new Error(
+          `top-split 要点 must accumulate prior 要点 in retainPush (missing ${missing.join(',')}): ${plan.id}/${step.id}`
+        )
+      }
+      pointAcc.push(step.id)
+    }
+  }
 }
 
 function safeJsonForScript(value) {
@@ -385,11 +446,22 @@ function generatedPush(push, planId) {
   }))
 }
 
-function generatedStepOptions(step) {
+function remapRetainPush(retainPush, planId) {
+  if (retainPush == null) return retainPush
+  const list = Array.isArray(retainPush) ? retainPush : [retainPush]
+  return list.map((id) => {
+    const value = String(id)
+    if (value.startsWith(`${planId}_`)) return value
+    return `${planId}_${value}`
+  })
+}
+
+function generatedStepOptions(step, planId) {
   const options = {}
-  for (const key of ['retainPush', 'scroll', 'stemClass', 'guidanceSub', 'problemBrief']) {
+  for (const key of ['scroll', 'stemClass', 'guidanceSub', 'problemBrief']) {
     if (step[key] != null) options[key] = step[key]
   }
+  if (step.retainPush != null) options.retainPush = remapRetainPush(step.retainPush, planId)
   return options
 }
 
@@ -401,6 +473,13 @@ function courseLabel(moduleType) {
     homework: '作业'
   }
   return prefixes[moduleType] || '例'
+}
+
+const DEFAULT_TOP_SPLIT_LAYOUT = {
+  edgePad: 28,
+  gap: 24,
+  splitLeftWidth: '58%',
+  splitMinHeight: 420
 }
 
 function generatedModule(plan, problem, displayIndex) {
@@ -416,7 +495,7 @@ function generatedModule(plan, problem, displayIndex) {
       containerIdx: 0,
       group: step.group || 0,
       description: (step.agent && step.agent.description) || step.description || '',
-      ...generatedStepOptions(step)
+      ...generatedStepOptions(step, plan.id)
     }
     const figure = generatedFigure(step.figure)
     if (figure) item.figure = figure
@@ -454,7 +533,6 @@ function generatedModule(plan, problem, displayIndex) {
         id: containerId,
         label: courseLabel(plan.moduleType || 'example', displayIndex),
         head: courseLabel(plan.moduleType || 'example', displayIndex),
-        source: plan.source || '',
         difficulty: plan.difficulty || 1,
         difficultyMax: plan.difficultyMax || 8,
         layout: plan.layout || 'left-right',
@@ -466,7 +544,11 @@ function generatedModule(plan, problem, displayIndex) {
             ? 'interleaved'
             : 'stacked'),
         ...(plan.quickQALayout ? { quickQALayout: plan.quickQALayout } : {}),
-        ...(plan.layoutParams ? { layoutParams: plan.layoutParams } : {}),
+        ...(plan.layout === 'top-split'
+          ? { layoutParams: { ...DEFAULT_TOP_SPLIT_LAYOUT, ...(plan.layoutParams || {}) } }
+          : plan.layoutParams
+            ? { layoutParams: plan.layoutParams }
+            : {}),
         ...(plan.style ? { style: plan.style } : {}),
         textAccumulate: true,
         steps: [
@@ -475,7 +557,7 @@ function generatedModule(plan, problem, displayIndex) {
             kind: plan.moduleType || 'example',
             action: start.action,
             description: (start.agent && start.agent.description) || start.description || '',
-            ...generatedStepOptions(start),
+            ...generatedStepOptions(start, plan.id),
             ...(generatedFigure(start.figure) ? { figure: generatedFigure(start.figure) } : {}),
             ...(start.push && start.push.length ? { push: generatedPush(start.push, plan.id) } : {})
           }
@@ -560,9 +642,11 @@ function relativeToRepo(file) {
   return relative.split(path.sep).join('/')
 }
 
-function buildDebugEditMap(courseId, snapshots) {
+function buildDebugEditMap(course, snapshots) {
+  const courseId = course.config.courseId
+  const grade = course.config.grade
   const base = `courses/${courseId}/.generated`
-  const dist = `engine/dist/${courseId}`
+  const dist = `dist/${grade}/${courseId}/course/runtime`
   const actions = []
   for (const snapshot of Object.values(snapshots)) {
     for (const step of snapshot.plan.steps) {
@@ -582,9 +666,10 @@ function buildDebugEditMap(courseId, snapshots) {
   return {
     version: 1,
     courseId,
+    grade,
     generatedCatalog: `${base}/action-catalog.json`,
     distCatalog: `${dist}/action-catalog.json`,
-    distIndex: `${dist}/index.html`,
+    distIndex: `dist/${grade}/${courseId}/index.html`,
     actions
   }
 }
@@ -614,13 +699,34 @@ function embedDebugEditMap(shellFile, editMap) {
   writeText(shellFile, shell)
 }
 
-function ensureCourseDebugShell(courseDir, courseId, editMap) {
+/** 把 parent-shell 三件套内联为单文件 debug.html（dist 产物顶层只用 index.html + debug.html + course/）。 */
+function buildInlineDebugHtml(editMap) {
+  const shellDir = path.join(root, 'templates', 'lesson-runtime', 'debug', 'parent-shell')
+  let html = fs.readFileSync(path.join(shellDir, 'index.html'), 'utf8')
+  const css = fs.readFileSync(path.join(shellDir, 'parent-shell.css'), 'utf8')
+  let js = fs.readFileSync(path.join(shellDir, 'parent-shell.js'), 'utf8')
+  js = js.replace(
+    /var iframeSrc = params\.get\('src'\) \|\| '[^']*'/,
+    `var iframeSrc = params.get('src') || 'index.html'`
+  )
+  js = js.replace(
+    /var editMap = window\.AICLASS_DEBUG_EDIT_MAP \|\| null/,
+    `var editMap = ${safeJsonForScript(editMap)}`
+  )
+  return html
+    .replace('<link rel="stylesheet" href="parent-shell.css">', `<style>\n${css}\n</style>`)
+    .replace('<script src="parent-shell.js"></script>', `<script>\n${js}\n</script>`)
+}
+
+function ensureCourseDebugShell(courseDir, course, editMap) {
+  const courseId = course.config.courseId
+  const grade = course.config.grade
   const source = path.join(root, 'templates', 'lesson-runtime', 'debug', 'parent-shell')
   const target = path.join(courseDir, 'debug')
   copyDirectory(source, target)
 
   const shellJs = path.join(target, 'parent-shell.js')
-  const iframeSrc = `../../../engine/dist/${courseId}/index.html`
+  const iframeSrc = `../../../../dist/${grade}/${courseId}/index.html`
   let shell = fs.readFileSync(shellJs, 'utf8')
   shell = shell.replace(
     /var iframeSrc = params\.get\('src'\) \|\| '[^']*'/,
@@ -633,7 +739,7 @@ function ensureCourseDebugShell(courseDir, courseId, editMap) {
     path.join(target, 'README.md'),
     `# ${courseId} 调试页\n\n` +
       `该页由 \`lesson:generate\` 自动同步，动作列表通过 \`help\` 动态读取。\n\n` +
-      `在 Chrome 或 Edge 中打开 [index.html](./index.html)，点击“连接课程文件夹”。选择仓库根目录会同步写回 plan.json；选择发布课件根目录（含 course.json 的 dist/<courseId>）则只修改该课件包。保存后刷新 iframe 即生效。\n\n` +
+      `在 Chrome 或 Edge 中打开 [index.html](./index.html)，点击“连接课程文件夹”。选择仓库根目录会同步写回 plan.json；选择发布课件根目录（含 course.json 的 dist/${grade}/${courseId}）则只修改该课件包。保存后刷新 iframe 即生效。\n\n` +
       `首次使用前先运行 \`cd engine && npm run course:export -- ${courseId}\`。\n`
   )
 }
@@ -713,8 +819,8 @@ function generateCourse(courseId) {
     path.join(generated, 'lesson', 'course.meta.js'),
     `// @generated; do not edit.\nwindow.LESSON_META = ${safeJsonForScript(buildLessonMeta(course))}\n`
   )
-  const editMap = buildDebugEditMap(courseId, snapshots)
-  ensureCourseDebugShell(course.dir, courseId, editMap)
+  const editMap = buildDebugEditMap(course, snapshots)
+  ensureCourseDebugShell(course.dir, course, editMap)
   return { course, generated, snapshots, catalog, editMap }
 }
 
@@ -763,8 +869,10 @@ function gitCommit() {
 function exportCourse(courseId, options = {}) {
   const result = generateCourse(courseId)
   const { course, generated, snapshots, catalog, editMap } = result
-  const temp = path.join(root, 'dist', `.tmp-${courseId}`)
-  const finalDir = path.join(root, 'dist', courseId)
+  const grade = course.config.grade
+  const distRoot = path.join(repoRoot, '..', 'dist')
+  const temp = path.join(distRoot, `.tmp-${courseId}`)
+  const finalDir = path.join(distRoot, String(grade), courseId)
   const packageDir = path.join(temp, 'course')
   removeDirectory(temp)
   fs.mkdirSync(temp, { recursive: true })
@@ -783,12 +891,7 @@ function exportCourse(courseId, options = {}) {
     path.join(root, 'templates', 'lesson-runtime', 'lesson'),
     path.join(packageDir, 'runtime', 'lesson')
   )
-  copyDirectory(
-    path.join(root, 'templates', 'lesson-runtime', 'debug'),
-    path.join(temp, 'debug')
-  )
-  writeJson(path.join(temp, 'debug', 'edit-map.json'), editMap)
-  embedDebugEditMap(path.join(temp, 'debug', 'parent-shell', 'parent-shell.js'), editMap)
+  writeText(path.join(temp, 'debug.html'), buildInlineDebugHtml(editMap))
   copyCourseSourceFiles(course, path.join(packageDir, 'runtime'))
   copyDirectory(path.join(generated, 'lesson'), path.join(packageDir, 'runtime', 'lesson'))
   const customStyle = path.join(course.dir, 'lesson', 'styles', 'lesson.css')
@@ -803,7 +906,6 @@ function exportCourse(courseId, options = {}) {
 
   writeText(path.join(temp, 'index.html'), renderIndex(course, catalog, 'course/runtime/'))
   writeJson(path.join(packageDir, 'runtime', 'action-catalog.json'), catalog)
-  writeJson(path.join(temp, 'debug', 'catalog-tree.json'), readJson(path.join(generated, 'debug-tree.json')))
   writeJson(path.join(packageDir, 'course.json'), course.config)
   writeJson(path.join(packageDir, 'engine.version.json'), readJson(path.join(root, 'engine.version.json')))
 
@@ -860,6 +962,7 @@ function exportCourse(courseId, options = {}) {
     return { ...result, finalDir }
   }
 
+  fs.mkdirSync(path.dirname(finalDir), { recursive: true })
   try {
     removeDirectory(finalDir)
     fs.renameSync(temp, finalDir)
@@ -888,48 +991,37 @@ function exportCourse(courseId, options = {}) {
     for (const entry of zip.getEntries()) entry.header.time = stableTime
     zip.writeZip(artifact)
   }
-  syncMonorepoDebug(courseId, finalDir)
+  syncMonorepoDebug(course, finalDir)
   return { ...result, finalDir }
 }
 
-/** Copy exported debug shell to monorepo root `debug/` for quick local open. */
-function syncMonorepoDebug(courseId, finalDir) {
+/** Copy exported debug.html to monorepo root for quick local open. */
+function syncMonorepoDebug(course, finalDir) {
+  const courseId = course.config.courseId
+  const grade = course.config.grade
   const monorepoRoot = path.join(root, '..')
   const marker = path.join(monorepoRoot, 'docs', 'production')
   if (!fs.existsSync(marker)) return
-  const sourceDebug = path.join(finalDir, 'debug')
+  const sourceDebug = path.join(finalDir, 'debug.html')
   if (!fs.existsSync(sourceDebug)) return
-  const targetDebug = path.join(monorepoRoot, 'debug')
-  removeDirectory(targetDebug)
-  copyDirectory(sourceDebug, targetDebug)
-  const shellJs = path.join(targetDebug, 'parent-shell', 'parent-shell.js')
-  if (fs.existsSync(shellJs)) {
-    const courseIndex = `../../engine/dist/${courseId}/index.html`
-    let text = fs.readFileSync(shellJs, 'utf8')
-    text = text.replace(
-      /var iframeSrc = params\.get\('src'\) \|\| '[^']*'/,
-      `var iframeSrc = params.get('src') || '${courseIndex}'`
-    )
-    fs.writeFileSync(shellJs, text, 'utf8')
-  }
-  writeText(
-    path.join(targetDebug, 'README.md'),
-    `# Debug 壳（当前课：\`${courseId}\`）\n\n` +
-    `由 \`course:export\` 自动同步到 monorepo 根目录，方便双击调试。\n\n` +
-    `打开：[\`parent-shell/index.html\`](./parent-shell/index.html)\n\n` +
-    `iframe 默认指向 \`engine/dist/${courseId}/index.html\`。\n` +
-    `换课重新 export 后会覆盖本目录。\n`
+  const targetDebug = path.join(monorepoRoot, 'debug.html')
+  let text = fs.readFileSync(sourceDebug, 'utf8')
+  text = text.replace(
+    /var iframeSrc = params\.get\('src'\) \|\| '[^']*'/,
+    `var iframeSrc = params.get('src') || '../dist/${grade}/${courseId}/index.html'`
   )
-  console.log(`Synced monorepo debug/ → current course ${courseId}`)
+  fs.writeFileSync(targetDebug, text, 'utf8')
+  console.log(`Synced monorepo debug.html → current course ${courseId}`)
 }
 
-function newCourse(courseId, title) {
+function newCourse(courseId, title, grade) {
   const target = courseDirectory(courseId)
   if (fs.existsSync(target)) throw new Error(`Course already exists: ${courseId}`)
   copyDirectory(path.join(root, 'templates', 'course'), target)
   const source = path.join(target, 'course.template.json')
   const config = fs.readFileSync(source, 'utf8')
     .replaceAll('__COURSE_ID__', courseId)
+    .replaceAll('__COURSE_GRADE__', String(grade))
     .replaceAll('__COURSE_TITLE__', title || courseId)
   writeText(path.join(target, 'course.json'), config)
   fs.unlinkSync(source)
@@ -975,6 +1067,9 @@ function previewCourse(courseId) {
 
 function parseCourseNewArgs(args) {
   const rest = args.filter((arg) => arg !== '--')
+  const gradeIndex = rest.indexOf('--grade')
+  const grade = gradeIndex >= 0 ? rest[gradeIndex + 1] : undefined
+  if (gradeIndex >= 0) rest.splice(gradeIndex, 2)
   let idOrPath
   if (rest[0] === '--from-md') {
     rest.shift()
@@ -984,12 +1079,12 @@ function parseCourseNewArgs(args) {
     idOrPath = rest.shift()
   }
   const title = rest.join(' ').trim() || undefined
-  if (!idOrPath) {
+  if (!idOrPath || !/^[1-9]\d*$/.test(String(grade))) {
     throw new Error(
-      'Usage: course:new <courseId|path.md> ["title"] | course:new --from-md <path.md> ["title"]'
+      'Usage: course:new <courseId|path.md> --grade <1-9|…> ["title"] | course:new --from-md <path.md> --grade <n> ["title"]'
     )
   }
-  return { courseId: courseIdFromInput(idOrPath), title }
+  return { courseId: courseIdFromInput(idOrPath), title, grade: Number(grade) }
 }
 
 function parseOptions(args) {
@@ -1003,8 +1098,8 @@ async function main() {
   const [command, first, second, ...rest] = process.argv.slice(2)
   switch (command) {
     case 'course:new': {
-      const { courseId, title } = parseCourseNewArgs([first, second, ...rest].filter(Boolean))
-      newCourse(courseId, title)
+      const { courseId, title, grade } = parseCourseNewArgs([first, second, ...rest].filter(Boolean))
+      newCourse(courseId, title, grade)
       break
     }
     case 'course:check': {

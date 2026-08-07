@@ -146,7 +146,7 @@ npm run course:preview -- volume-review
 npm run course:export -- volume-review --zip
 ```
 
-产出 `engine/dist/volume-review/` 与 `engine/artifacts/…-source.zip`。
+产出仓库根 `dist/<grade>/volume-review/`（年级子目录，如 `dist/7/`）与 `engine/artifacts/…-source.zip`。
 
 ## 暂缓
 

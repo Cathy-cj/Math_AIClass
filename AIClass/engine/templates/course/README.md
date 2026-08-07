@@ -1,6 +1,6 @@
 # 课程源目录
 
-本目录由 `npm run course:new -- <course-id>` 复制。
+本目录由 `npm run course:new -- <course-id> --grade <n>` 复制（`--grade` 必填）。
 
 - `course.json`：课程编排、引擎能力和 authoring 引用。
 - `lesson/modules/`：确实无法由 Plan 生成的手写模块或 Figure。

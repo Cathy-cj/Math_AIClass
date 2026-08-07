@@ -3,13 +3,13 @@ import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { spawnSync } from 'node:child_process'
 import { chromium } from 'playwright'
+import { distDir } from './dist-path.mjs'
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
 const coursesRoot = path.join(path.dirname(root), 'courses')
 const courseId = 'fixture-minimal'
 const courseDir = path.join(coursesRoot, courseId)
 const fixture = path.join(root, 'tests', 'fixtures', 'minimal-course')
-const exported = path.join(root, 'dist', courseId)
 
 function copyDirectory(source, target) {
   fs.mkdirSync(target, { recursive: true })
@@ -35,15 +35,17 @@ const generated = spawnSync(
 try {
   if (generated.status !== 0) throw new Error(generated.stderr || generated.stdout)
 
-const debugHtml = path.join(exported, 'debug', 'parent-shell', 'index.html')
-const debugCss = path.join(exported, 'debug', 'parent-shell', 'parent-shell.css')
-const debugJs = path.join(exported, 'debug', 'parent-shell', 'parent-shell.js')
-const editMapFile = path.join(exported, 'debug', 'edit-map.json')
-
-for (const file of [debugHtml, debugCss, debugJs, editMapFile]) {
-  if (!fs.existsSync(file)) throw new Error(`Debug shell asset missing: ${file}`)
+const exported = distDir(root, courseId)
+if (!exported) throw new Error(`No course.json for ${courseId} — cannot resolve dist path`)
+const debugHtml = path.join(exported, 'debug.html')
+if (!fs.existsSync(debugHtml)) throw new Error(`Debug shell asset missing: ${debugHtml}`)
+const debugHtmlText = fs.readFileSync(debugHtml, 'utf8')
+if (/(?:src|href)="[^"]*\.(?:css|js)"/.test(debugHtmlText)) {
+  throw new Error('Dist debug.html must be a self-contained single file.')
 }
-const editMap = JSON.parse(fs.readFileSync(editMapFile, 'utf8'))
+const editMapMatch = /var editMap = (\{[\s\S]*?\n\})/.exec(debugHtmlText)
+if (!editMapMatch) throw new Error('Debug shell must embed the edit map.')
+const editMap = JSON.parse(editMapMatch[1])
 const actionCatalog = JSON.parse(fs.readFileSync(path.join(exported, 'course', 'runtime', 'action-catalog.json'), 'utf8'))
 if (!editMap.actions.length) throw new Error('Debug edit map has no editable actions.')
 for (const entry of editMap.actions) {

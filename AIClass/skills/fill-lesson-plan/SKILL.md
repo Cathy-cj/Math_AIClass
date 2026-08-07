@@ -13,6 +13,13 @@ disable-model-invocation: true
 - `lesson/{id}/outline.json` 存在且 `outlineStatus` 为 `approved`（`plan:check` 已通过）
 - **有图题**：须已完成 [figure-space-clarify](../figure-space-clarify/SKILL.md)——`figure-spec.json` 的 `status` 为 `confirmed`，且用户已明确 **「图形 OK」**；无图题豁免
 
+## 讲法分派（先定 layout 再填）
+
+同一 course 可混排三种讲法，由该题 `layout` 决定：
+
+- **`top-split`（计算讲法）**：走 [calc-teaching-spine.md](../lesson-plan/calc-teaching-spine.md) 的**上屏四段**（开始→要点→详解_起→详解_步→答案），**禁止** `problemBrief` / `guidanceChain` / `step.group` / `step.figure`；push 类名与 retainPush 查 [calculation-marks.md](../lesson-plan/calculation-marks.md)；排版（长式换行、右栏、左栏滚动）查 [calc-engine-layout.md](../lesson-plan/calc-engine-layout.md)，`tex` 单行交给引擎 fit；本 SKILL 步骤 4–8 的 figure/text 契约（problemBrief 快照、guidanceChain、interleaved）对 top-split 题**全部不适用**
+- **`figure-text` / `text-over-figure` / `left-right` / `text-only`（figure/text 讲法）**：按本 SKILL 原流程
+
 ## 必读
 
 - 已确认的 [`math_syllabus/lesson/{id}/outline.json`](../../math_syllabus/lesson/)（唯一大纲来源，无 md 稿）

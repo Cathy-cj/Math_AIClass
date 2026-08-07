@@ -364,7 +364,7 @@
     return reveal
   }
 
-  // 为 scrollPast 目标补足底部滚动空间，使后续内容能对齐视口顶部。
+  // 手写板保留在文档流中；底部垫高保证可滚动手写板完全离开视口，同时仍可向上滚回查看
   function ensureScrollPastCapacity(scrollEl, pastEl, topPadding) {
     if (!scrollEl || !pastEl) return
     var stack = getScrollStack(scrollEl)
@@ -410,15 +410,29 @@
     }
   }
 
+  function collapseHandwritingPast(el) {
+    if (!el || !el.classList) return
+    el.classList.add('lf-block-handwriting--past')
+  }
+
+  function expandHandwritingPast(scrollEl) {
+    if (!scrollEl || !scrollEl.querySelectorAll) return
+    scrollEl.querySelectorAll('.lf-block-handwriting--past').forEach(function (node) {
+      node.classList.remove('lf-block-handwriting--past')
+      node.style.display = ''
+    })
+  }
+
   function measureScrollPastInner(scrollEl, el, gap) {
     if (!scrollEl || !el) return 0
     gap = gap != null ? gap : followState.scrollPastGap
+    collapseHandwritingPast(el)
     ensureScrollPastCapacity(scrollEl, el, followState.topPadding)
     void scrollEl.offsetHeight
     var scrollRect = scrollEl.getBoundingClientRect()
     var scaleY = getScrollElScaleY(scrollEl)
 
-    // 优先将目标后的内容顶对齐，让已滚过内容自然离开视口。
+    // 优先跟到「手写板之后的最新内容」（本步新 push），否则退回手写板后第一个节点
     var reveal = pickScrollPastReveal(el)
     var latest = findRevealBlock(followState.anchor, scrollEl)
     if (latest && el.compareDocumentPosition) {
@@ -602,6 +616,7 @@
     var scrollEl = opts.scrollEl || stage
     var layoutScrollEl = opts.layoutScrollEl || scrollEl
     if (layoutScrollEl && opts.resetPast) {
+      expandHandwritingPast(layoutScrollEl)
       clearScrollCapacity(layoutScrollEl)
     }
     var innerEl = (scrollEl && scrollEl !== stage && !isStageScroll(scrollEl)) ? scrollEl : null
@@ -853,6 +868,7 @@
   function resetScrollPast() {
     var scrollEl = getActiveScrollEl()
     if (scrollEl) {
+      expandHandwritingPast(scrollEl)
       clearScrollCapacity(scrollEl)
     }
   }

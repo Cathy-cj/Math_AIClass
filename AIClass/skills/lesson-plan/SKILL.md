@@ -12,9 +12,22 @@ disable-model-invocation: true
 
 本 skill 用于：用户已有一份 plan，要改 JSON 或核对 schema。
 
+## 讲法分派（按 layout）
+
+同一 course 可混排三种讲法，由每题 `plan.json.layout` 决定，改 plan 前先按此分派：
+
+| layout | 讲法 | 权威文档 |
+|--------|------|----------|
+| `figure-text` / `text-over-figure` / `left-right` | figure 讲法（guidanceChain + problemBrief） | [reference.md](reference.md) |
+| `text-only` | text 讲法（guidanceChain 同 figure，无图） | [reference.md](reference.md) |
+| `top-split` | 计算讲法（要点→详解→答案，禁 problemBrief/guidanceChain/group） | [calc-teaching-spine.md](calc-teaching-spine.md) + [calculation-marks.md](calculation-marks.md) |
+
+- **layout = `top-split` 的题**：禁 `problemBrief` / `guidanceChain` / `guidanceLayout` / `step.group` / `step.figure`；`agent.type` 仍需 explain/ask；排版问题（长式换行、右栏、滚动）查 [calc-engine-layout.md](calc-engine-layout.md)，勿在 `tex` 里加 `\\` 或改 region 打补丁。
+- 非 top-split 题保持原 figure/text 契约不变。
+
 ## 执行步骤
 
-1. 读 [reference.md](reference.md)
+1. 读 [reference.md](reference.md)；若该题 layout 为 `top-split`，改读 [calc-teaching-spine.md](calc-teaching-spine.md) 与 [calculation-marks.md](calculation-marks.md)
 2. 按 schema 修改 `lesson/{id}/plan.json`
 3. 运行：
 

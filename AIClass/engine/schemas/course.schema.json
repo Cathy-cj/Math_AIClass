@@ -4,13 +4,18 @@
   "title": "AIClass course",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schemaVersion", "courseId", "title", "version", "engine"],
+  "required": ["schemaVersion", "courseId", "grade", "title", "version", "engine"],
   "properties": {
     "$schema": { "type": "string" },
     "schemaVersion": { "const": 1 },
     "courseId": {
       "type": "string",
       "pattern": "^[a-z0-9][a-z0-9-]{1,47}$"
+    },
+    "grade": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "年级（dist 产物按此分目录，1 年级 → dist/1/）"
     },
     "title": { "type": "string", "minLength": 1 },
     "version": {

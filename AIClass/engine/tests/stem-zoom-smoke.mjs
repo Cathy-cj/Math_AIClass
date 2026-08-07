@@ -3,13 +3,15 @@ import path from 'node:path'
 import fs from 'node:fs'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { chromium } from 'playwright'
+import { distDir } from './dist-path.mjs'
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
 const courseId = 'primary-meet-speed-shift'
-const indexHtml = path.join(root, 'dist', courseId, 'index.html')
+const exported = distDir(root, courseId)
+const indexHtml = exported ? path.join(exported, 'index.html') : null
 
-if (!fs.existsSync(indexHtml)) {
-  console.log(`stem-expand long smoke skipped: dist/${courseId}/index.html not found`)
+if (!indexHtml || !fs.existsSync(indexHtml)) {
+  console.log(`stem-expand long smoke skipped: dist/<grade>/${courseId}/index.html not found`)
   process.exit(0)
 }
 

@@ -3,16 +3,18 @@ import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { spawnSync } from 'node:child_process'
 import { chromium } from 'playwright'
+import { distDir } from './dist-path.mjs'
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
-const exported = path.join(root, 'dist', 'fixture-minimal')
+let exported = distDir(root, 'fixture-minimal')
 
-if (!fs.existsSync(path.join(exported, 'index.html'))) {
+if (!exported || !fs.existsSync(path.join(exported, 'index.html'))) {
   const result = spawnSync(process.execPath, ['tests/run-tests.mjs'], {
     cwd: root,
     encoding: 'utf8'
   })
   if (result.status !== 0) throw new Error(result.stderr || result.stdout)
+  exported = distDir(root, 'fixture-minimal')
 }
 
 const launchOptions = process.platform === 'win32'
@@ -132,8 +134,8 @@ if (!result.photoHasLatex) throw new Error('Photo result did not render KaTeX.')
 if (!result.photoCardInRightStack) {
   throw new Error('Photo result must mount in right main stack (.course-scroll-stack).')
 }
-if (!result.photoCardAfterBrief || !result.photoCardBeforeGuide) {
-  throw new Error('Photo result must sit below problemBrief and above guidance.')
+if (!result.photoCardBeforeGuide) {
+  throw new Error('Photo result must sit above guidance in the right main stack (.course-scroll-stack).')
 }
 if (!result.photoLogs.some((item) =>
   item.type === 'user_submitted' &&

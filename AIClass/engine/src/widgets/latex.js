@@ -9,15 +9,15 @@
     if (block.variant) wrap.classList.add('lf-latex--' + block.variant)
 
     var tex = block.tex || block.value || ''
+    var rawTex = tex
     if (block.display && tex.indexOf('$$') === -1) {
       tex = '$$' + tex + '$$'
     } else if (!block.display && tex.indexOf('$') === -1) {
       tex = '$' + tex + '$'
     }
+    wrap.setAttribute('data-calc-tex', rawTex)
+    wrap.setAttribute('data-force-latex', '1')
     wrap.textContent = tex
-    if (/calc-eq(?:--stem|-index)?\b/.test(String(block.class || ''))) {
-      wrap.setAttribute('data-force-latex', '1')
-    }
     return wrap
   }
 

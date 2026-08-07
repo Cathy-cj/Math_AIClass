@@ -3,6 +3,7 @@ import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { spawnSync } from 'node:child_process'
 import { chromium } from 'playwright'
+import { distDir } from './dist-path.mjs'
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
 const [courseId, actionPrefix, expectedText, expectedState] = process.argv.slice(2)
@@ -19,7 +20,8 @@ const generated = spawnSync(process.execPath, ['tools/aiclass.mjs', 'course:expo
 })
 if (generated.status !== 0) throw new Error(generated.stderr || generated.stdout)
 
-const exported = path.join(root, 'dist', courseId)
+const exported = distDir(root, courseId)
+if (!exported) throw new Error(`No course.json for ${courseId} — cannot resolve dist path`)
 const catalog = JSON.parse(fs.readFileSync(path.join(exported, 'course', 'runtime', 'action-catalog.json'), 'utf8'))
 const actions = catalog
   .map((item) => item.name)

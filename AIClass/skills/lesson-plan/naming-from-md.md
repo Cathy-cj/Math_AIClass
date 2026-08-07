@@ -19,12 +19,14 @@ Agent 与用户以 **`.md` 文件**作为题目输入时的唯一命名权威。
 建课命令（在 `engine/`）：
 
 ```bash
-npm run course:new -- sum-6-21-5star "课程标题"
+npm run course:new -- sum-6-21-5star --grade 6 "课程标题"
 # 或
-npm run course:new -- --from-md ../path/sum-6-21-5star.md "课程标题"
+npm run course:new -- --from-md ../path/sum-6-21-5star.md --grade 6 "课程标题"
 # 或（第一个参数以 .md 结尾时自动推导）
-npm run course:new -- ../path/sum-6-21-5star.md "课程标题"
+npm run course:new -- ../path/sum-6-21-5star.md --grade 6 "课程标题"
 ```
+
+`--grade <n>` 必填：写入 course.json，dist 产物按年级分目录（`--grade 6` → `dist/6/<courseId>/`）。
 
 ## lesson id（`math_syllabus/lesson/{id}/`）
 

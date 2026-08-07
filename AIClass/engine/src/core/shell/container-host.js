@@ -143,12 +143,58 @@
     )
   }
 
+  function isInterleavedAccumulate(container) {
+    if (!container) return false
+    if (container.layout === 'top-split' || container.layout === 'left-right') return false
+    return container.guidanceLayout === 'interleaved' && container.textAccumulate === true
+  }
+
+  function isRightPinStart(push, retainPush) {
+    if (!push || !push.length || retainPush) return false
+    return push.every(function (block) {
+      var region = block.region || block.zone || 'top'
+      return region === 'right'
+    })
+  }
+
+  function clearTopSplitSideEffects(container, stepIds, retainPush, push) {
+    if (!container || container.layout !== 'top-split') {
+      container.clearStepBlocks(stepIds, retainPush)
+      return
+    }
+    if (isRightPinStart(push, retainPush)) {
+      container.clearStepBlocks(stepIds, retainPush, { scrollEl: container.scrollLeftEl })
+      container.clearStepBlocks(stepIds, retainPush, { scrollEl: container.scrollRightEl })
+      if (container.scrollLeftEl) container.scrollLeftEl.scrollTop = 0
+      if (container.scrollRightEl) container.scrollRightEl.scrollTop = 0
+      return
+    }
+    if (retainPush && retainPush.length) {
+      container.clearStepBlocks(stepIds, retainPush, { scrollEl: container.scrollLeftEl })
+      return
+    }
+    container.clearStepBlocks(stepIds, retainPush)
+  }
+
   function renderStepContent(containerRecord, stepMeta, push, stepDef) {
     var container = containerRecord.container
     if (!container) return null
 
-    if (stepMeta.sideEffect && stepDef && stepMeta.stepId != null) {
-      container.clearStepBlocks([stepMeta.stepId], stepDef.retainPush)
+    if (stepMeta.sideEffect && stepDef) {
+      if (isInterleavedAccumulate(container)) {
+        if (stepMeta.stepId != null) {
+          container.clearStepBlocks([stepMeta.stepId], stepDef.retainPush)
+        }
+      } else if (stepDef.sideEffectStepIds && stepDef.sideEffectStepIds.length) {
+        clearTopSplitSideEffects(
+          container,
+          stepDef.sideEffectStepIds,
+          stepDef.retainPush,
+          push
+        )
+      } else if (stepMeta.stepId != null) {
+        container.clearStepBlocks([stepMeta.stepId], stepDef.retainPush)
+      }
     }
 
     // 每步独立：有 figure 则切换状态，无 figure 则保持当前状态不变（避免清掉上一步的动画）
@@ -180,7 +226,10 @@
     }
 
     if (stepDef && stepDef.stemClass) {
-      container.applyStemClass(stepDef.stemClass)
+      var stemSpecs = Array.isArray(stepDef.stemClass) ? stepDef.stemClass : [stepDef.stemClass]
+      stemSpecs.forEach(function (spec) {
+        container.applyStemClass(spec)
+      })
     }
 
     if (push && push.length) {
@@ -192,6 +241,9 @@
         config: lessonRenderConfig()
       })
       container.finalizeInteractions(stepMeta.stepId)
+      if (window.AIClassCalcLineFit && typeof window.AIClassCalcLineFit.applyAfterRender === 'function') {
+        window.AIClassCalcLineFit.applyAfterRender(container.getElement())
+      }
       return appended.length ? appended[appended.length - 1] : null
     }
 
@@ -254,6 +306,10 @@
           el._stemExpandTeardown()
         } else if (typeof el._stemZoomTeardown === 'function') {
           el._stemZoomTeardown()
+        }
+        var scrollRight = record.container.scrollRightEl
+        if (scrollRight && typeof scrollRight._overlayScrollbarTeardown === 'function') {
+          scrollRight._overlayScrollbarTeardown()
         }
       }
     })

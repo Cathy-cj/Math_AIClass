@@ -28,7 +28,7 @@ The AI outputs **JSON only** (`outline.json` / `plan.json`) and presents review 
 Engine side (run in `engine/`):
 
 ```bash
-npm run course:new -- <courseId> "标题"
+npm run course:new -- <courseId> --grade <n> "标题"   # --grade 必填；dist 产物按年级分目录
 npm run pipeline:board -- <courseId>                              # refresh board
 npm run pipeline:board -- <courseId> --gate <problemId> figureOk  # manual gate (figure only)
 npm run pipeline:board -- <courseId> --complete-preview <problemId>

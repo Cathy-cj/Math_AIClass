@@ -378,12 +378,15 @@
   CourseContainer.prototype._insertPhotoAnswerCard = function (target, card) {
     if (!target || !card) return
     var brief = this.problemBriefEl
-    if (brief && brief.parentNode) {
+    // problemBrief 嵌入 guide 面板内（interleaved 审题槽）时，卡插到面板前，避免混入 guide 或藏进隐藏槽
+    var briefEmbedded = brief && brief.closest && brief.closest('.cc-guide-panel')
+    if (brief && brief.parentNode && !briefEmbedded) {
       var briefParent = brief.parentNode
       if (brief.nextSibling) briefParent.insertBefore(card, brief.nextSibling)
       else briefParent.appendChild(card)
       return
     }
+    // 题干下方、guide 上方（含 brief 嵌入 guide 面板内的情况：卡放面板前）
     var guide = target.querySelector && target.querySelector('.cc-guide-panel, .cc-guide-section')
     if (guide && guide.parentNode === target) {
       target.insertBefore(card, guide)
@@ -914,14 +917,13 @@
     container.scrollEl = scroll
     container.figureSlot = figureSlot
 
-    if ((options.head || options.source || options.difficulty) && container.scrollEl) {
+    if ((options.head || options.difficulty) && container.scrollEl) {
       container.scrollEl.classList.add('course-scroll-top--labeled')
       var stemHead = null
       if (window.AIClassComponent &&
           typeof window.AIClassComponent.createCourseStemHead === 'function') {
         stemHead = window.AIClassComponent.createCourseStemHead({
           head: options.head || null,
-          source: options.source || null,
           difficulty: options.difficulty,
           difficultyMax: options.difficultyMax
         })
@@ -936,12 +938,6 @@
           labelNode.className = 'course-label'
           labelNode.textContent = options.head
           group.appendChild(labelNode)
-        }
-        if (options.source) {
-          var sourceNode = document.createElement('span')
-          sourceNode.className = 'course-source'
-          sourceNode.textContent = options.source
-          group.appendChild(sourceNode)
         }
         stemHead.appendChild(group)
       }

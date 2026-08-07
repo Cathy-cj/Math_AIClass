@@ -35,7 +35,7 @@ AIClass/                          monorepo 根
 math_syllabus/lesson/{id}/plan.json
   → courses/{courseId}/course.json
   → lesson:generate → courses/{id}/.generated
-  → course:export → engine/dist/{id}
+  → course:export → dist/{grade}/{id}（仓库根，按年级分目录）
 ```
 
 禁止手改 `.generated/`、`dist/.../lesson/modules/` 当真源。
