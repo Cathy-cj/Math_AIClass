@@ -185,7 +185,10 @@
         if (stepMeta.stepId != null) {
           container.clearStepBlocks([stepMeta.stepId], stepDef.retainPush)
         }
-      } else if (stepDef.sideEffectStepIds && stepDef.sideEffectStepIds.length) {
+      } else if (container.layout === 'top-split' &&
+                 stepDef.sideEffectStepIds && stepDef.sideEffectStepIds.length) {
+        // 仅 top-split（计算讲解）使用全量 sideEffect ids + retainPush 清左侧；
+        // 其他布局（left-right / text-only / figure-text…）只清当前步，保证讲解链向下累加。
         clearTopSplitSideEffects(
           container,
           stepDef.sideEffectStepIds,

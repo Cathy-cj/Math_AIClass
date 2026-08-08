@@ -8,7 +8,6 @@
   --hub: #d97706;
   --topic: #0ea5e9;
   --main: #8b5cf6;
-  --feynman: #059669;
   --ok: #16a34a;
   --err: #dc2626;
   --sidebar-width: 360px;
@@ -223,7 +222,6 @@ body.is-resizing-log {
 .zone-title.hub { background: #fef3c7; color: #92400e; }
 .zone-title.topic { background: #e0f2fe; color: #0369a1; }
 .zone-title.main { background: #ede9fe; color: #6d28d9; }
-.zone-title.feynman { background: #d1fae5; color: #047857; }
 .zone-title.sys { background: #f3f4f6; color: var(--muted); }
 .zone-title.concept { background: #dbeafe; color: #1d4ed8; }
 
@@ -298,7 +296,6 @@ body.is-resizing-log {
 .tag.topic { background: #e0f2fe; color: #0369a1; }
 .tag.main { background: #ede9fe; color: #6d28d9; }
 .tag.fx { background: #fef3c7; color: #b45309; }
-.tag.feynman { background: #d1fae5; color: #047857; }
 .tag.concept { background: #dbeafe; color: #1d4ed8; }
 .tag.concept-close { background: #e0e7ff; color: #4338ca; }
 .tag.hw { background: #ffedd5; color: #c2410c; }

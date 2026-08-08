@@ -4,24 +4,21 @@ This monorepo’s **tool-neutral** SOP for any coding agent (Cursor, Claude Code
 
 ## Always start here
 
-1. Read [`skills/README.md`](skills/README.md) for the skill map.
-2. For end-to-end course production, follow [`skills/production-flow/SKILL.md`](skills/production-flow/SKILL.md) — **auto-advance per problem** with no figure-review gate.
-3. Progress / gates: [`skills/course-pipeline/SKILL.md`](skills/course-pipeline/SKILL.md).
-4. Human playbook index: [`docs/production/README.md`](docs/production/README.md).
+1. Read [`../skills/README.md`](../skills/README.md) and select the text combination: `outline/common.md` → `outline/reasoning-problem.md` → `outline/phase-routing.md`; `plan/common/*` → `plan/text/*`; `make/common.md` → `make/text-runtime.md`.
+2. The repository-local `skills/` directory has been removed; root [`../skills/README.md`](../skills/README.md) is the only SOP source.
+3. For the current engine, keep using its existing `plan:check`、`course:check`、`lesson:generate`、`course:preview` and `course:export` commands; root skills describe the rules, not replacement commands.
 
 ## Packages
 
 | Path | Role |
 |------|------|
-| `math_syllabus/` | Per-problem outline / plan JSON + review MD |
-| `courses/` | Courseware sources (`course.json`, modules) |
+| `_output_/` | Per-course source of truth: course.json registry + outline / plan / debug / .generated |
 | `engine/` | Text-only runtime, templates, CLI, KaTeX vendor |
-| `skills/` | **SOP source of truth** (orchestration + authoring) |
-| `docs/production/` | Human L0 playbook |
+| `../skills/` | **Text 试点的 SOP 真源**（按阶段组织的共用与 profile 规则） |
 
 ## Rules
 
 - Do **not** invent alternate SOP trees under product folders (`.cursor`, `.claude`, etc.).
-- Edit SOP bodies only under `skills/`.
-- Lesson content lives in `math_syllabus/lesson/{id}/`; never treat `.generated/` as source of truth.
-- One `courseId` at a time. This repository is only for **纯文字题**; pure-calculation and figure-based courses belong to their own repositories. `outlineOk` / `planOk` / `previewOk` are auto-written after check/preview.
+- 共用或 text SOP 正文只编辑 `../skills/`；本仓不再保留 `skills/` 目录。
+- Lesson content lives in `_output_/{grade}/{courseId}/{problemId}/`; never treat `.generated/` or `dist/` as source of truth.
+- One `courseId` at a time. This repository is only for **纯文字题**; pure-calculation and figure-based courses belong to their own repositories. Preview acceptance is tracked in conversation.

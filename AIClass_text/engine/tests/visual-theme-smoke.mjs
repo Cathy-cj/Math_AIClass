@@ -3,9 +3,10 @@ import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { spawnSync } from 'node:child_process'
 import { chromium } from 'playwright'
+import { distDir } from '../../../shared/engine/tests/dist-path.mjs'
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
-const coursesRoot = path.join(path.dirname(root), 'courses')
+const coursesRoot = path.join(root, '..', '..', '_output_', '7')
 const fixture = path.join(root, 'tests', 'fixtures', 'minimal-course')
 const courseId = 'fixture-minimal'
 const courseDir = path.join(coursesRoot, courseId)
@@ -37,7 +38,8 @@ try {
     ? { channel: 'msedge', headless: true }
     : { headless: true }
   const browser = await chromium.launch(launchOptions)
-  const exported = path.join(root, 'dist', courseId)
+  const exported = distDir(root, courseId)
+  if (!exported) throw new Error(`No course.json for ${courseId} — cannot resolve dist path`)
   const page = await browser.newPage()
   const errors = []
   page.on('pageerror', (error) => errors.push(String(error)))

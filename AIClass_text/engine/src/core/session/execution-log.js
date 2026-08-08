@@ -1,4 +1,4 @@
-// 向父页面 postMessage 回传（step_ok / help / feynman_shown / scheduler_error 等）
+// 向父页面 postMessage 回传（step_ok / help / scheduler_error 等）
 ;(function () {
   function post(payload) {
     var boot = window.__COURSE_BOOT || {}

@@ -6,7 +6,7 @@
   "runtimePolicy": {
     "includeInPackage": false,
     "codegenReadable": false,
-    "allowedConsumer": "skills/archetype-plan-selector"
+    "allowedConsumer": "skills/outline/calculation.md"
   },
   "recipes": [
     {

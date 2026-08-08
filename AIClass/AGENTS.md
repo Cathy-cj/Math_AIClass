@@ -4,24 +4,21 @@ This monorepo’s **tool-neutral** SOP for any coding agent (Cursor, Claude Code
 
 ## Always start here
 
-1. Read [`skills/README.md`](skills/README.md) for the skill map.
-2. For end-to-end course production, follow [`skills/production-flow/SKILL.md`](skills/production-flow/SKILL.md) — **auto-advance per problem**; only **图形 OK** waits for human.
-3. Progress / gates: [`skills/course-pipeline/SKILL.md`](skills/course-pipeline/SKILL.md).
-4. Human playbook index: [`docs/production/README.md`](docs/production/README.md).
+1. Read [`../skills/README.md`](../skills/README.md) and select the figure combination: `outline/common.md` → `outline/reasoning-problem.md` → `outline/phase-routing.md` → `outline/figure-addon.md`; `figure/SKILL.md` → `specification.md`; `plan/common/*` → `plan/figure/*`; `make/common.md` → `make/figure-runtime.md`.
+2. The repository-local `skills/` directory has been removed; root [`../skills/README.md`](../skills/README.md) is the only SOP source.
+3. For the current engine, keep using its existing `plan:check`、`figure:preview`、`course:check`、`lesson:generate`、`course:preview` and `course:export` commands; root skills describe the rules, not replacement commands.
 
 ## Packages
 
 | Path | Role |
 |------|------|
-| `math_syllabus/` | Per-problem outline / plan JSON + review MD |
-| `courses/` | Courseware sources (`course.json`, modules) |
+| `_output_/` | Per-course source of truth: course.json registry + outline / plan / figure preview / debug / .generated |
 | `engine/` | Runtime, templates, CLI, vendor |
-| `skills/` | **SOP source of truth** (orchestration + authoring) |
-| `docs/production/` | Human L0 playbook |
+| `../skills/` | **Figure 试点的 SOP 真源**（按阶段组织的共用与 profile 规则） |
 
 ## Rules
 
 - Do **not** invent alternate SOP trees under product folders (`.cursor`, `.claude`, etc.).
-- Edit SOP bodies only under `skills/`.
-- Lesson content lives in `math_syllabus/lesson/{id}/`; never treat `.generated/` as source of truth.
-- One `courseId` at a time. **Human gate: 图形 OK only** (有图题). `outlineOk` / `planOk` / `previewOk` auto-written after check/preview.
+- 共用或 figure SOP 正文只编辑 `../skills/`；本仓不再保留 `skills/` 目录。
+- Lesson content lives in `_output_/{grade}/{courseId}/{problemId}/`; never treat `.generated/` or `dist/` as source of truth.
+- One `courseId` at a time. **Human figure approval (图形 OK)** is recorded as `figure-spec.json` `status: "confirmed"` (有图题); preview acceptance is tracked in conversation.

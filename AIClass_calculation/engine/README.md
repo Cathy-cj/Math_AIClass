@@ -2,8 +2,8 @@
 
 互动课件 **共享引擎**：运行时、模板、schema、工具与离线 vendor。
 
-- 课件源在仓库根 [`../courses/`](../courses/)
-- 跨包流程 [`../docs/production/`](../docs/production/)
+- 课件源（course.json 注册表 + outline/plan + debug）在仓库根 [`../../_output_/`](../../_output_/)
+- 跨包流程 → 根 [`skills/README.md`](../../skills/README.md)
 - 本包文档 [`docs/`](docs/README.md)
 
 ```bash

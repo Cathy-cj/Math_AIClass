@@ -6,10 +6,10 @@ import { spawn } from 'node:child_process'
 import Ajv2020 from 'ajv/dist/2020.js'
 import AdmZip from 'adm-zip'
 import { courseIdFromInput, validSlug } from './course-id-from-md.mjs'
+import { distRoot, outputLessonDir, outputCourseDir, findOutputCourseDir, platformRoot } from '../../../shared/output-paths.mjs'
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
 const repoRoot = path.dirname(root)
-const coursesRoot = path.join(repoRoot, 'courses')
 const generatedName = '.generated'
 const referenceSentinels = [
   'AICLASS_REFERENCE_ONLY',
@@ -54,6 +54,7 @@ function removeDirectory(target) {
 
 /** Windows often locks dist/<courseId> while debug iframe is open; overwrite in place. */
 function publishExportDirectory(temp, finalDir) {
+  fs.mkdirSync(path.dirname(finalDir), { recursive: true })
   try {
     removeDirectory(finalDir)
     fs.renameSync(temp, finalDir)
@@ -110,7 +111,9 @@ function courseDirectory(courseId) {
   if (!validSlug(courseId)) {
     throw new Error('courseId must be a 2-48 character lowercase ASCII slug.')
   }
-  return path.join(coursesRoot, courseId)
+  const dir = findOutputCourseDir(courseId)
+  if (!dir) throw new Error(`Course not found: ${courseId}`)
+  return dir
 }
 
 function loadCourse(courseId) {
@@ -151,7 +154,7 @@ function checkCourse(course) {
   validateAgainstSchema(
     course.config,
     path.join(root, 'schemas', 'course.schema.json'),
-    `courses/${course.config.courseId}/course.json`
+    `_output_/${course.config.grade}/${course.config.courseId}/course.json`
   )
   if (course.config.courseId !== path.basename(course.dir)) {
     throw new Error('courseId must match its directory name.')
@@ -197,14 +200,10 @@ function resolvePlan(course, problem) {
     assertInside(course.dir, local, 'planPath')
     return local
   }
-  const workspace = loadWorkspace()
-  const rootKey = course.config.authoring.rootKey
-  const configured = workspace.authoringRoots && workspace.authoringRoots[rootKey]
-  if (!configured) {
-    throw new Error(`workspace.local.json does not map authoring root "${rootKey}"`)
+  if (course.config.authoring.rootKey !== 'output') {
+    throw new Error('course.json authoring.rootKey must be "output".')
   }
-  const authoringRoot = path.resolve(root, configured)
-  return path.join(authoringRoot, 'lesson', problem.problemId, 'plan.json')
+  return path.join(outputLessonDir(course.config.grade, course.config.courseId, problem.problemId), 'plan.json')
 }
 
 function normalizePlan(raw) {
@@ -575,16 +574,18 @@ function buildLessonMeta(course) {
 }
 
 function relativeToRepo(file) {
-  const relative = path.relative(repoRoot, file)
+  const relative = path.relative(platformRoot, file)
   if (relative.startsWith('..') || path.isAbsolute(relative)) {
-    throw new Error(`Debug editing only supports plans inside the repository: ${file}`)
+    throw new Error(`Debug editing only supports plans inside the monorepo: ${file}`)
   }
   return relative.split(path.sep).join('/')
 }
 
-function buildDebugEditMap(courseId, snapshots) {
-  const base = `courses/${courseId}/.generated`
-  const dist = `engine/dist/${courseId}`
+function buildDebugEditMap(course, snapshots) {
+  const courseId = course.config.courseId
+  const grade = course.config.grade
+  const base = `_output_/${grade}/${courseId}/.generated`
+  const dist = `dist/${grade}/${courseId}/course/runtime`
   const actions = []
   for (const snapshot of Object.values(snapshots)) {
     for (const step of snapshot.plan.steps) {
@@ -604,9 +605,10 @@ function buildDebugEditMap(courseId, snapshots) {
   return {
     version: 1,
     courseId,
+    grade,
     generatedCatalog: `${base}/action-catalog.json`,
     distCatalog: `${dist}/action-catalog.json`,
-    distIndex: `${dist}/index.html`,
+    distIndex: `dist/${grade}/${courseId}/index.html`,
     actions
   }
 }
@@ -636,13 +638,15 @@ function embedDebugEditMap(shellFile, editMap) {
   writeText(shellFile, shell)
 }
 
-function ensureCourseDebugShell(courseDir, courseId, editMap) {
+function ensureCourseDebugShell(courseDir, course, editMap) {
+  const courseId = course.config.courseId
+  const grade = course.config.grade
   const source = path.join(root, 'templates', 'lesson-runtime', 'debug', 'parent-shell')
   const target = path.join(courseDir, 'debug')
   copyDirectory(source, target)
 
   const shellJs = path.join(target, 'parent-shell.js')
-  const iframeSrc = `../../../engine/dist/${courseId}/index.html`
+  const iframeSrc = `../../../../dist/${grade}/${courseId}/index.html`
   let shell = fs.readFileSync(shellJs, 'utf8')
   shell = shell.replace(
     /var iframeSrc = params\.get\('src'\) \|\| '[^']*'/,
@@ -655,7 +659,7 @@ function ensureCourseDebugShell(courseDir, courseId, editMap) {
     path.join(target, 'README.md'),
     `# ${courseId} 调试页\n\n` +
       `该页由 \`lesson:generate\` 自动同步，动作列表通过 \`help\` 动态读取。\n\n` +
-      `在 Chrome 或 Edge 中打开 [index.html](./index.html)，点击“连接课程文件夹”。选择仓库根目录会同步写回 plan.json；选择发布课件根目录（含 course.json 的 dist/<courseId>）则只修改该课件包。保存后刷新 iframe 即生效。\n\n` +
+      `在 Chrome 或 Edge 中打开 [index.html](./index.html)，点击“连接课程文件夹”。选择平台根目录会同步写回 plan.json；选择发布课件根目录（含 course.json 的 dist/${grade}/${courseId}）则只修改该课件包。保存后刷新 iframe 即生效。\n\n` +
       `首次使用前先运行 \`cd engine && npm run course:export -- ${courseId}\`。\n`
   )
 }
@@ -730,8 +734,8 @@ function generateCourse(courseId) {
     path.join(generated, 'lesson', 'course.meta.js'),
     `// @generated; do not edit.\nwindow.LESSON_META = ${safeJsonForScript(buildLessonMeta(course))}\n`
   )
-  const editMap = buildDebugEditMap(courseId, snapshots)
-  ensureCourseDebugShell(course.dir, courseId, editMap)
+  const editMap = buildDebugEditMap(course, snapshots)
+  ensureCourseDebugShell(course.dir, course, editMap)
   return { course, generated, snapshots, catalog, editMap }
 }
 
@@ -780,8 +784,9 @@ function gitCommit() {
 function exportCourse(courseId, options = {}) {
   const result = generateCourse(courseId)
   const { course, generated, snapshots, catalog, editMap } = result
-  const temp = path.join(root, 'dist', `.tmp-${courseId}`)
-  const finalDir = path.join(root, 'dist', courseId)
+  const grade = course.config.grade
+  const temp = path.join(distRoot, `.tmp-${courseId}`)
+  const finalDir = path.join(distRoot, String(grade), courseId)
   const packageDir = path.join(temp, 'course')
   removeDirectory(temp)
   fs.mkdirSync(temp, { recursive: true })
@@ -890,38 +895,27 @@ function exportCourse(courseId, options = {}) {
   return { ...result, finalDir }
 }
 
-function newCourse(courseId, title) {
-  const target = courseDirectory(courseId)
+function newCourse(courseId, title, grade) {
+  const target = outputCourseDir(grade, courseId)
   if (fs.existsSync(target)) throw new Error(`Course already exists: ${courseId}`)
   copyDirectory(path.join(root, 'templates', 'course'), target)
   const source = path.join(target, 'course.template.json')
   const config = fs.readFileSync(source, 'utf8')
     .replaceAll('__COURSE_ID__', courseId)
+    .replaceAll('__COURSE_GRADE__', String(grade))
     .replaceAll('__COURSE_TITLE__', title || courseId)
   writeText(path.join(target, 'course.json'), config)
   fs.unlinkSync(source)
-  const pipeTplName = 'pipeline.template.json'
-  const pipeCopied = path.join(target, pipeTplName)
-  const pipeTpl = path.join(root, 'templates', 'course', pipeTplName)
-  if (fs.existsSync(pipeTpl)) {
-    const pipe = JSON.parse(
-      fs.readFileSync(pipeTpl, 'utf8').replaceAll('__COURSE_ID__', courseId)
-    )
-    writeJson(path.join(target, 'pipeline.json'), pipe)
-  }
-  if (fs.existsSync(pipeCopied)) fs.unlinkSync(pipeCopied)
-  for (const dir of ['lesson/modules', 'lesson/extensions', 'assets', 'authoring']) {
-    fs.mkdirSync(path.join(target, dir), { recursive: true })
-  }
-  ensureCourseDebugShell(target, courseId, {
+  ensureCourseDebugShell(target, { config: { courseId, grade } }, {
     version: 1,
     courseId,
-    generatedCatalog: `courses/${courseId}/.generated/action-catalog.json`,
-    distCatalog: `engine/dist/${courseId}/action-catalog.json`,
-    distIndex: `engine/dist/${courseId}/index.html`,
+    grade,
+    generatedCatalog: `_output_/${grade}/${courseId}/.generated/action-catalog.json`,
+    distCatalog: `dist/${grade}/${courseId}/course/runtime/action-catalog.json`,
+    distIndex: `dist/${grade}/${courseId}/index.html`,
     actions: []
   })
-  console.log(`Created courses/${courseId}`)
+  console.log(`Created _output_/${grade}/${courseId}`)
 }
 
 function restoreCourse(spec) {
@@ -950,6 +944,9 @@ function previewCourse(courseId) {
 
 function parseCourseNewArgs(args) {
   const rest = args.filter((arg) => arg !== '--')
+  const gradeIndex = rest.indexOf('--grade')
+  const grade = gradeIndex >= 0 ? rest[gradeIndex + 1] : undefined
+  if (gradeIndex >= 0) rest.splice(gradeIndex, 2)
   let idOrPath
   if (rest[0] === '--from-md') {
     rest.shift()
@@ -959,12 +956,12 @@ function parseCourseNewArgs(args) {
     idOrPath = rest.shift()
   }
   const title = rest.join(' ').trim() || undefined
-  if (!idOrPath) {
+  if (!idOrPath || !/^[1-9]\d*$/.test(String(grade))) {
     throw new Error(
-      'Usage: course:new <courseId|path.md> ["title"] | course:new --from-md <path.md> ["title"]'
+      'Usage: course:new <courseId|path.md> --grade <n> ["title"] | course:new --from-md <path.md> --grade <n> ["title"]'
     )
   }
-  return { courseId: courseIdFromInput(idOrPath), title }
+  return { courseId: courseIdFromInput(idOrPath), title, grade: Number(grade) }
 }
 
 function parseOptions(args) {
@@ -978,8 +975,8 @@ async function main() {
   const [command, first, second, ...rest] = process.argv.slice(2)
   switch (command) {
     case 'course:new': {
-      const { courseId, title } = parseCourseNewArgs([first, second, ...rest].filter(Boolean))
-      newCourse(courseId, title)
+      const { courseId, title, grade } = parseCourseNewArgs([first, second, ...rest].filter(Boolean))
+      newCourse(courseId, title, grade)
       break
     }
     case 'course:check': {

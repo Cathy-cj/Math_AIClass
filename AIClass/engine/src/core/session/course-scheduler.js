@@ -154,7 +154,6 @@
     this.checkpoint = null
     this.pointer = null
     this.instanceCounter = 0
-    this.feynmanOpenId = null
     this.conceptSheetOpenId = null
     this.photoAnswerTarget = null
   }
@@ -729,27 +728,8 @@
 
   CourseScheduler.prototype._registryActionMeta = function () {
     var actions = []
-    var feynman = []
 
     this.registry.modules.forEach(function (mod) {
-      if (mod.mount === 'feynman-overlay') {
-        var fid = mod.feynmanId != null ? String(mod.feynmanId) : mod.id
-        feynman.push({
-          moduleId: mod.id,
-          title: mod.title,
-          feynmanId: fid,
-          enterAction: mod.enterAction,
-          exitAction: mod.exitAction
-        })
-        if (mod.enterAction) {
-          actions.push({ name: mod.enterAction, description: '' })
-        }
-        if (mod.exitAction) {
-          actions.push({ name: mod.exitAction, description: '' })
-        }
-        return
-      }
-
       mod.containers.forEach(function (c) {
         c.steps.forEach(function (s) {
           actions.push({
@@ -783,8 +763,7 @@
     })
 
     return {
-      actions: actions,
-      feynman: feynman
+      actions: actions
     }
   }
 
@@ -804,14 +783,6 @@
     meta.actions.forEach(function (a) {
       add(a.name, [], a.description || '')
     })
-    meta.feynman.forEach(function (mod) {
-      if (mod.enterAction) {
-        add(mod.enterAction, ['seed'], '费曼屏遮罩层 · ' + (mod.title || mod.feynmanId))
-      }
-      if (mod.exitAction) {
-        add(mod.exitAction, [], '卸载费曼遮罩')
-      }
-    })
     return list
   }
 
@@ -822,17 +793,32 @@
     var meta = this._registryActionMeta()
     var registryNames = {}
     meta.actions.forEach(function (a) { registryNames[a.name] = true })
-    meta.feynman.forEach(function (mod) {
-      if (mod.enterAction) registryNames[mod.enterAction] = true
-      if (mod.exitAction) registryNames[mod.exitAction] = true
+
+    // 系统动作：运行时内部、不进作者目录，只要求可分发，不要求出现在目录里
+    var systemNames = {}
+    if (this.registry && this.registry.conceptSheetCloseAction) {
+      systemNames[this.registry.conceptSheetCloseAction] = true
+    }
+    systemNames['快问快答_关闭'] = true
+
+    // quickQA 打开/显示由 action-router 分发，但 _registryActionMeta 不枚举，视为合法目录项
+    var knownNames = {}
+    Object.keys(registryNames).forEach(function (n) { knownNames[n] = true })
+    Object.keys(systemNames).forEach(function (n) { knownNames[n] = true })
+    ;(this.registry.modules || []).forEach(function (mod) {
+      ;(mod.quickQA || []).forEach(function (qa) {
+        if (qa.openAction) knownNames[qa.openAction] = true
+        if (qa.questionAction) knownNames[qa.questionAction] = true
+      })
     })
 
     catalog.forEach(function (entry) {
-      if (!registryNames[entry.name]) {
+      if (!knownNames[entry.name]) {
         console.warn('[lesson] action-catalog 含未注册 action:', entry.name)
       }
     })
     Object.keys(registryNames).forEach(function (name) {
+      if (systemNames[name]) return
       var found = catalog.some(function (entry) { return entry.name === name })
       if (!found) {
         console.warn('[lesson] action-catalog 缺少 action:', name)
@@ -842,24 +828,10 @@
 
   CourseScheduler.prototype.getHelpPayload = function () {
     var actions = []
-    var feynmanModules = []
     var allModules = []
-
-    if (this.registry && typeof this.registry.feynmanModules === 'function') {
-      this.registry.feynmanModules().forEach(function (mod) {
-        feynmanModules.push({
-          moduleId: mod.id,
-          title: mod.title,
-          feynmanId: mod.feynmanId != null ? String(mod.feynmanId) : mod.id,
-          enterAction: mod.enterAction,
-          exitAction: mod.exitAction
-        })
-      })
-    }
+    var qaCloseSeen = false
 
     this.registry.modules.forEach(function (mod) {
-      if (mod.mount === 'feynman-overlay') return
-
       var steps = []
       mod.containers.forEach(function (c) {
         c.steps.forEach(function (s) {
@@ -938,6 +910,25 @@
         })
       })
 
+      if ((mod.quickQA || []).length) {
+        steps.push({
+          stepId: '快问快答·关闭',
+          action: '快问快答_关闭',
+          description: '收起当前快问快答气泡',
+          kind: 'quickQA'
+        })
+        if (!qaCloseSeen) {
+          qaCloseSeen = true
+          actions.push({
+            name: '快问快答_关闭',
+            stepId: '快问快答·关闭',
+            kind: 'quickQA',
+            moduleId: mod.id,
+            description: '收起当前快问快答气泡'
+          })
+        }
+      }
+
       allModules.push({
         moduleId: mod.id,
         title: mod.title,
@@ -959,7 +950,6 @@
     return {
       lesson: { id: meta.id, title: meta.title, tag: meta.tag },
       modules: allModules,
-      feynman: feynmanModules,
       actions: actions,
       scrollManifest: this.index.getManifest(),
       scrollPlan: this.registry.scrollPlan(),
@@ -997,10 +987,6 @@
   }
 
   CourseScheduler.prototype.reset = function () {
-    if (this.feynmanOpenId && window.AIClassFeynmanFlow && AIClassFeynmanFlow.isOpen()) {
-      AIClassFeynmanFlow.teardown(null, { immediate: true })
-    }
-    this.feynmanOpenId = null
     if (this.conceptSheetOpenId && window.AIClassConceptSheetFlow && AIClassConceptSheetFlow.isOpen()) {
       AIClassConceptSheetFlow.teardown(null, { immediate: true })
     }
@@ -1010,85 +996,6 @@
     if (window.AIClassPreLessonFlow) {
       AIClassPreLessonFlow.onReset(stage)
     }
-  }
-
-  CourseScheduler.prototype._resolveFeynmanAction = function (actionName) {
-    var reg = this.registry
-    if (!reg || typeof reg.feynmanModules !== 'function') return null
-    var mods = reg.feynmanModules()
-    for (var i = 0; i < mods.length; i++) {
-      var mod = mods[i]
-      if (mod.enterAction === actionName) {
-        return {
-          type: 'enter',
-          module: mod,
-          config: reg.feynmanMountConfig(mod)
-        }
-      }
-      if (mod.exitAction === actionName) {
-        return {
-          type: 'exit',
-          module: mod,
-          config: reg.feynmanMountConfig(mod)
-        }
-      }
-    }
-    return null
-  }
-
-  CourseScheduler.prototype.beginFeynmanScreen = function (config, params) {
-    if (this.session !== 'boot' || !this.currentModuleId) {
-      return this._fail('NOT_IN_LINEAR_SESSION', '费曼屏仅能在讲课过程中开启', {
-        receivedAction: config.enterAction,
-        session: this.session
-      }, '请先发送当前模块的入口 action')
-    }
-    if (!window.AIClassFeynmanFlow) {
-      return this._fail('FEYNMAN_NOT_LOADED', '费曼屏组件未加载', {})
-    }
-    if (AIClassFeynmanFlow.isOpen() || this.feynmanOpenId) {
-      return this._fail('FEYNMAN_ALREADY_OPEN', '费曼屏已开启', {
-        feynmanId: this.feynmanOpenId
-      }, '请先发送 action「费曼' + this.feynmanOpenId + '_结束」')
-    }
-    var result
-    try {
-      result = AIClassFeynmanFlow.mount(config, params || {})
-    } catch (err) {
-      return this._fail('FEYNMAN_MOUNT_FAILED', err.message || String(err), {
-        feynmanId: config.id
-      })
-    }
-    this.feynmanOpenId = String(config.id)
-    this.log.post({
-      type: 'feynman_shown',
-      status: 'ok'
-    })
-    return { ok: true, feynmanId: config.id, cardOrder: result.cardOrder }
-  }
-
-  CourseScheduler.prototype.endFeynmanScreen = function (config) {
-    if (!window.AIClassFeynmanFlow || !AIClassFeynmanFlow.isOpen()) {
-      return this._fail('FEYNMAN_NOT_OPEN', '费曼屏未开启', {
-        receivedAction: config.exitAction
-      })
-    }
-    if (String(this.feynmanOpenId) !== String(config.id)) {
-      return this._fail('FEYNMAN_ID_MISMATCH', '费曼编号与当前开启的不一致', {
-        openId: this.feynmanOpenId,
-        requestedId: config.id
-      })
-    }
-    var id = this.feynmanOpenId
-    var self = this
-    this.feynmanOpenId = null
-    AIClassFeynmanFlow.teardown(function () {
-      self.log.post({
-        type: 'feynman_dismissed',
-        status: 'ok'
-      })
-    })
-    return { ok: true, feynmanId: id }
   }
 
   CourseScheduler.prototype._resolveConceptSheetAction = function (actionName) {
@@ -1116,12 +1023,6 @@
         receivedAction: config.action,
         session: this.session
       }, '请先发送当前模块的入口 action')
-    }
-    if (this.feynmanOpenId) {
-      return this._fail('FEYNMAN_OPEN', '费曼屏开启中，请先结束当前费曼屏', {
-        receivedAction: config.action,
-        feynmanId: this.feynmanOpenId
-      })
     }
     if (!window.AIClassConceptSheetFlow) {
       return this._fail('CONCEPT_SHEET_NOT_LOADED', '概念插播组件未加载', {})
@@ -1335,21 +1236,6 @@
       this.log.post({ type: 'course_reset', status: 'ok' })
       return { ok: true }
     }
-    var feyResolved = this._resolveFeynmanAction(actionName)
-    if (feyResolved) {
-      if (feyResolved.type === 'enter') {
-        return this.beginFeynmanScreen(feyResolved.config, params)
-      }
-      return this.endFeynmanScreen(feyResolved.config)
-    }
-
-    if (this.feynmanOpenId) {
-      return this._fail('FEYNMAN_OPEN', '费曼屏开启中，请先结束当前费曼屏', {
-        receivedAction: actionName,
-        feynmanId: this.feynmanOpenId
-      }, '请先发送 action「费曼' + this.feynmanOpenId + '_结束」')
-    }
-
     var conceptResolved = this._resolveConceptSheetAction(actionName)
     if (conceptResolved) {
       if (conceptResolved.type === 'close') {

@@ -2,8 +2,10 @@
   "$schema": "../engine/schemas/course.schema.json",
   "schemaVersion": 1,
   "courseId": "fixture-minimal",
+  "grade": 7,
   "title": "合成测试课程",
   "version": "0.1.0",
+  "profile": "calculation",
   "engine": {
     "range": "^1.0.0",
     "requiredCapabilities": [

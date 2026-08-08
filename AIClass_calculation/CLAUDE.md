@@ -6,30 +6,20 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **`AGENTS.md` is the tool-neutral agent entry point; `skills/` is the SOP source of truth.** This file is only a map — SOP bodies live under `skills/` and must be edited there.
 
-For any course-production request, load the relevant skill first:
-
-- `skills/production-flow/SKILL.md` — full flow navigator（**auto-advance per problem**；无图形门禁）
-- `skills/course-pipeline/SKILL.md` — board/gates
-- `skills/lesson-outline/` — outline = 备课；`teaching-design.md` 自 AIClass
-- `skills/fill-lesson-plan/` → `skills/revise-lesson-plan/` → `skills/codegen-lesson/`
-- `skills/lesson-plan/calc-teaching-spine.md` — **上屏骨架**（对齐 module_template）
-- `skills/lesson-plan/calculation-marks.md` — `.calc-*` 类名与 retainPush
-- `skills/lesson-plan/calc-engine-layout.md` — **引擎布局 / 公式 fit / 左栏滚动 / previewOk**（全课组件契约）
-- `skills/lesson-plan/` — schema、phrase-bank（口播自 AIClass）、math typesetting
+For any course-production request, load root `../skills/README.md` first. For calculation courses read outline/calculation → plan/calculation → make/calculation-runtime.
 
 ## Commands
 
-Content side（`math_syllabus/`）：
+Content side（在 monorepo 根目录）：
 
 ```bash
-npm run plan:check
+npm run content:check:calculation
 ```
 
 Engine side（`engine/`）：
 
 ```bash
 npm run course:new -- <courseId> "标题"
-npm run pipeline:board -- <courseId>
 npm run course:check -- <courseId>
 npm run lesson:generate -- <courseId>
 npm run course:preview -- <courseId>
@@ -40,15 +30,15 @@ npm test
 ## Architecture
 
 ```text
-math_syllabus/lesson/{id}/  →  courses/{courseId}/  ←  engine/
-outline.json / plan.json       course.json + modules     top-split runtime + calc CSS
+_output_/{grade}/{courseId}/  ←  engine/
+course.json + {problemId}/outline·plan + debug/   top-split runtime + calc CSS
 ```
 
-State machine：`board → outline → plan → arrange → codegen → check/generate/preview`
+State machine：`course:new → outline → plan → arrange → codegen → check/generate/preview`
 
 ## Repo rules
 
 - Edit SOP bodies only under `skills/`.
-- Lesson content lives in `math_syllabus/lesson/{id}/`.
-- All work happens on branch `dev`.
-- 本仓只做纯计算题；勿引入 figure 字段或 `figureOk`。
+- Lesson content lives in `_output_/{grade}/{courseId}/{problemId}/`; `dist/` 不是内容真源。
+- All work happens on branch `skills` (user convention for this fork).
+- 本仓只做纯计算题；勿引入 figure 字段。

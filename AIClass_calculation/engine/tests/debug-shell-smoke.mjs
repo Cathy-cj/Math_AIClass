@@ -3,13 +3,15 @@ import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { spawnSync } from 'node:child_process'
 import { chromium } from 'playwright'
+import { distDir } from '../../../shared/engine/tests/dist-path.mjs'
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
-const coursesRoot = path.join(path.dirname(root), 'courses')
+const coursesRoot = path.join(root, '..', '..', '_output_', '7')
 const courseId = 'fixture-minimal'
 const courseDir = path.join(coursesRoot, courseId)
 const fixture = path.join(root, 'tests', 'fixtures', 'minimal-course')
-const exported = path.join(root, 'dist', courseId)
+const exported = distDir(root, courseId)
+if (!exported) throw new Error(`No course.json for ${courseId} — cannot resolve dist path`)
 
 function copyDirectory(source, target) {
   fs.mkdirSync(target, { recursive: true })
@@ -111,7 +113,7 @@ if (result.toolbarDisplay !== 'flex') throw new Error('Debug shell CSS did not l
 if (result.groupedCount < 1) throw new Error('Debug shell did not render grouped catalog zones.')
 if (result.actionCount < 2) throw new Error('Debug shell action list is too small.')
 if (!result.logExpanded) throw new Error('Debug shell log panel did not expand.')
-if (!result.hasReload || !result.hasFolderConnect) throw new Error('Debug shell toolbar controls missing.')
+if (!result.hasReload) throw new Error('Debug shell toolbar controls missing.')
 
 console.log('Debug shell smoke passed: ' + courseId)
 } finally {

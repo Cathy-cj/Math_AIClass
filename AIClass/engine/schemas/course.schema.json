@@ -4,10 +4,14 @@
   "title": "AIClass course",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schemaVersion", "courseId", "grade", "title", "version", "engine"],
+  "required": ["schemaVersion", "courseId", "grade", "title", "version", "engine", "profile"],
   "properties": {
     "$schema": { "type": "string" },
     "schemaVersion": { "const": 1 },
+    "profile": {
+      "enum": ["figure", "text", "calculation"],
+      "description": "渲染 profile：决定哪个 content:check 检查该课、用哪个 runtime"
+    },
     "courseId": {
       "type": "string",
       "pattern": "^[a-z0-9][a-z0-9-]{1,47}$"

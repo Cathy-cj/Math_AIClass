@@ -1,27 +1,30 @@
 /**
- * 从 figure-spec.json 生成 lesson/{id}/figure-preview.html
+ * 从 _output_/{grade}/{courseId}/{problemId}/figure-spec.json 生成图形预览。
  *
  * Usage (from engine/):
- *   node tools/figure-preview.mjs <lessonId>
- *   node tools/figure-preview.mjs lesson/ex1/figure-spec.json
+ *   node tools/figure-preview.mjs <courseId>/<lessonId>
+ *   node tools/figure-preview.mjs <lessonId> # 仅限该 id 全局唯一
  */
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { outputLessonDir, outputRoot, findOutputCourseDir, platformRoot } from '../../../shared/output-paths.mjs'
 
 const engineRoot = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
-const repoRoot = path.dirname(engineRoot)
 const templateDir = path.join(engineRoot, 'templates', 'figure-preview')
 
 function readJson(file) {
   return JSON.parse(fs.readFileSync(file, 'utf8'))
 }
 
-function loadWorkspace() {
-  const local = path.join(engineRoot, 'workspace.local.json')
-  const example = path.join(engineRoot, 'workspace.example.json')
-  const file = fs.existsSync(local) ? local : example
-  return fs.existsSync(file) ? readJson(file) : { authoringRoots: {} }
+function courseGrade(courseId) {
+  const dir = findOutputCourseDir(courseId)
+  if (!dir) return null
+  try {
+    return readJson(path.join(dir, 'course.json')).grade
+  } catch {
+    return null
+  }
 }
 
 function resolveLessonDir(arg) {
@@ -30,11 +33,27 @@ function resolveLessonDir(arg) {
     const abs = path.isAbsolute(arg) ? arg : path.resolve(process.cwd(), arg)
     return path.dirname(abs)
   }
-  const roots = loadWorkspace().authoringRoots || {}
-  const syllabus = roots.mathSyllabus
-    ? path.resolve(engineRoot, roots.mathSyllabus)
-    : path.join(repoRoot, 'math_syllabus')
-  return path.join(syllabus, 'lesson', arg)
+  const parts = arg.replaceAll('\\', '/').split('/').filter(Boolean)
+  if (parts.length === 2) {
+    const grade = courseGrade(parts[0])
+    if (grade == null) return null
+    return outputLessonDir(grade, parts[0], parts[1])
+  }
+  if (!fs.existsSync(outputRoot)) return null
+  const matches = []
+  for (const gradeEntry of fs.readdirSync(outputRoot, { withFileTypes: true })) {
+    if (!gradeEntry.isDirectory()) continue
+    const gradeDir = path.join(outputRoot, gradeEntry.name)
+    for (const courseEntry of fs.readdirSync(gradeDir, { withFileTypes: true })) {
+      if (!courseEntry.isDirectory()) continue
+      const dir = path.join(gradeDir, courseEntry.name, arg)
+      if (fs.existsSync(dir)) matches.push(dir)
+    }
+  }
+  if (matches.length > 1) {
+    throw new Error(`题目 ${arg} 在多个课程中存在，请使用 <courseId>/<lessonId>。`)
+  }
+  return matches[0] || null
 }
 
 function previewTitle(outline, spec, lessonDir) {
@@ -103,7 +122,7 @@ function main() {
   const outPath = path.join(lessonDir, 'figure-preview.html')
   fs.writeFileSync(outPath, renderPreviewHtml(spec, lessonDir), 'utf8')
 
-  const rel = path.relative(repoRoot, outPath).split(path.sep).join('/')
+  const rel = path.relative(platformRoot, outPath).split(path.sep).join('/')
   console.log(`Wrote ${rel}`)
   console.log('Open locally:', outPath)
 }

@@ -3,16 +3,18 @@ import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { spawnSync } from 'node:child_process'
 import { chromium } from 'playwright'
+import { distDir } from '../../../shared/engine/tests/dist-path.mjs'
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
-const exported = path.join(root, 'dist', 'fixture-minimal')
+let exported = distDir(root, 'fixture-minimal')
 
-if (!fs.existsSync(path.join(exported, 'index.html'))) {
+if (!exported || !fs.existsSync(path.join(exported, 'index.html'))) {
   const result = spawnSync(process.execPath, ['tests/run-tests.mjs'], {
     cwd: root,
     encoding: 'utf8'
   })
   if (result.status !== 0) throw new Error(result.stderr || result.stdout)
+  exported = distDir(root, 'fixture-minimal')
 }
 
 const launchOptions = process.platform === 'win32'

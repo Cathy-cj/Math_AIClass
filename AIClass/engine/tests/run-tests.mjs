@@ -21,7 +21,7 @@ function checkFigureTheme() {
   assert(presentation.includes('.lf-solve-answer-highlight'), 'Shared theme missing answer highlight styles.')
   assert(
     presentation.includes('.course-figure .jxgbox') &&
-      /\[data-layout="left-right"\]\s*\.course-figure\s*\{[^}]*background:\s*#fff/s.test(presentation),
+      /\.course-figure\s*\.jxgbox\s*\{[^}]*background(?:-color)?:\s*#fff/s.test(presentation),
     'Figure stage must use opaque white board against paper grid.'
   )
   const problemBrief = fs.readFileSync(path.join(root, 'src', 'components', 'problem-brief.js'), 'utf8')
@@ -46,6 +46,11 @@ function checkHostAccumulate() {
   assert(
     host.includes("container.layout === 'top-split'"),
     'container-host must branch top-split clearing semantics'
+  )
+  assert(
+    host.includes("else if (container.layout === 'top-split' &&") &&
+      host.includes('stepDef.sideEffectStepIds'),
+    'sideEffectStepIds clearing must be gated to top-split only (left-right must accumulate)'
   )
 }
 

@@ -1,10 +1,11 @@
 {
-  "$schema": "../engine/schemas/course.schema.json",
+  "$schema": "../../../AIClass/engine/schemas/course.schema.json",
   "schemaVersion": 1,
   "courseId": "__COURSE_ID__",
   "grade": __COURSE_GRADE__,
   "title": "__COURSE_TITLE__",
   "version": "0.1.0",
+  "profile": "figure",
   "engine": {
     "range": "^1.0.0",
     "requiredCapabilities": [
@@ -15,7 +16,7 @@
     ]
   },
   "authoring": {
-    "rootKey": "authoringSource",
+    "rootKey": "output",
     "problems": []
   },
   "authoredModules": [],

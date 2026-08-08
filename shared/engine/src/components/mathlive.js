@@ -340,7 +340,10 @@
     var field = document.querySelector('.aic-math-field:not([disabled])')
     activeField = field || null
     ensureFab().hidden = !field
-    if (field) showKeyboard(field)
+    // 键盘只属于“当前步骤”的填空：步骤切换后旧填空块仍在 DOM 中但已非当前步，
+    // 不得再据此强行唤回键盘；新填空步仍由本函数在挂载时展开、并由 fill.js 自动聚焦。
+    var isCurrentField = !!(field && field.closest && field.closest('[data-is-current-step="true"]'))
+    if (field && isCurrentField) showKeyboard(field)
     else hideKeyboard()
   }
   ns.resetMathKeyboard = function () {

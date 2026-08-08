@@ -74,7 +74,6 @@
     var modules = reg.modules || []
     for (var m = 0; m < modules.length; m++) {
       var mod = modules[m]
-      if (mod.mount === 'feynman-overlay') continue
       var containers = mod.containers || []
       for (var c = 0; c < containers.length; c++) {
         var container = containers[c]

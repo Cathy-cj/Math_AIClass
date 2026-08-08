@@ -6,21 +6,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **`AGENTS.md` is the tool-neutral agent entry point; `skills/` is the SOP source of truth.** This file is only a map — SOP bodies live under `skills/` and must be edited there, never duplicated into `.claude/`, `.cursor/`, or any other product folder.
 
-For any course-production request, load the relevant skill first:
-
-- `skills/production-flow/SKILL.md` — full flow navigator (**auto-advance per problem**; **图形 OK** is the only human gate)
-- `skills/course-pipeline/SKILL.md` — board/gates (`courses/<courseId>/pipeline.json` + `.md`)
-- `skills/lesson-outline/` — outline = 备课 (lesson prep); `teaching-design.md` there is the core teaching methodology shared with fill-lesson-plan
-- `skills/fill-lesson-plan/` → `skills/revise-lesson-plan/` → `skills/codegen-lesson/` — plan authoring, revision, landing into `courses/`
-- `skills/figure-space-clarify/` — figure geometry confirmation before any figure code
-- `skills/lesson-plan/` — shared schemas (`reference.md`), phrase-bank, phase-routing, math typesetting (not a flow step)
+For any course-production request, load root `../skills/README.md` first. For figure courses read outline → figure confirmation → plan/figure → make/figure-runtime.
 
 ## Commands
 
-Content side (run in `math_syllabus/`):
+Content side (run at monorepo root):
 
 ```bash
-npm run plan:check               # content lint: teaching-design completeness, screen brevity, phrase variety, plan/outline structure
+npm run content:check:figure     # content lint: teaching-design completeness, screen brevity, phrase variety, plan/outline structure
 ```
 
 The AI outputs **JSON only** (`outline.json` / `plan.json`) and presents review summaries in conversation; never run `outline:export` / `plan:export` — those md exporters are optional human tools.
@@ -28,11 +21,7 @@ The AI outputs **JSON only** (`outline.json` / `plan.json`) and presents review 
 Engine side (run in `engine/`):
 
 ```bash
-npm run course:new -- <courseId> --grade <n> "标题"   # --grade 必填；dist 产物按年级分目录
-npm run pipeline:board -- <courseId>                              # refresh board
-npm run pipeline:board -- <courseId> --gate <problemId> figureOk  # manual gate (figure only)
-npm run pipeline:board -- <courseId> --complete-preview <problemId>
-npm run pipeline:board -- <courseId> --sync                       # after problem list changes
+npm run course:new -- <courseId> --grade <grade> "标题"
 npm run course:check -- <courseId>
 npm run lesson:generate -- <courseId>
 npm run course:preview -- <courseId>
@@ -41,32 +30,31 @@ npm test                          # engine unit tests (tests/run-tests.mjs; need
 npm run test:browser              # Playwright smoke (CI also runs this)
 ```
 
-CI (`.github/workflows/ci.yml`): engine job runs `vendor:sync` + `npm test` + `test:browser`; content job runs in `math_syllabus/`. `plan:check` warnings exit non-zero — treat them as failures.
+CI 需在根目录运行对应的 `content:check:*`；内容校验 warnings 均视为失败。
 
 ## Architecture
 
 Monorepo with three packages plus SOPs; content flows left to right:
 
 ```text
-math_syllabus/lesson/{id}/          courses/{courseId}/                 engine/
-outline.json                 →      course.json (registry)       ←──   runtime shell, widgets,
-plan.json                           lesson/modules/XX-{id}.js           templates, CLI tools,
-(per-problem source of truth)       lesson/modules/_*-figure.js         vendored KaTeX/JSXGraph
+_output_/{grade}/{courseId}/                           engine/
+course.json (registry) + {problemId}/         ←──  runtime shell, widgets,
+  outline/plan/figure-spec + figure-preview         templates, CLI tools,
+  debug/ + .generated/ (gitignored)                 vendored KaTeX/JSXGraph
 ```
 
-- **`math_syllabus/`** holds per-problem teaching content. `outline.json` is the lesson-prep design (positioning, entry point, `teachingStages[]` with derivation loops/interactions, closing); `plan.json` expands approved stages into steps (`action`, `agent.description` narration, `figure.state/note/actions`, right-column `push` blocks). Humans review the JSON files directly (plus in-conversation summaries); `check-phrase-variety.mjs` is the lint behind `plan:check`, and the `scripts/*.mjs` md exporters are optional human tools only.
-- **`courses/`** holds courseware sources produced by codegen-lesson: `course.json` registers problems (order, actionPrefix), modules dispatch plan steps as `postMessage` actions. `pipeline.json`/`pipeline.md` per course track production gates. `.generated/` is never source of truth.
+- **`_output_/`** is the per-course source of truth, grouped by grade: `_output_/{grade}/<courseId>/course.json` registers problems (order, actionPrefix) and the grade; `_output_/{grade}/<courseId>/<problemId>/` holds `outline.json` (lesson-prep design: positioning, entry point, `teachingStages[]` with derivation loops/interactions, closing), `plan.json` (steps: `action`, `agent.description` narration, `figure.state/note/actions`, right-column `push` blocks), and optional `figure-spec.json`/`figure-preview.html`. `debug/` and `.generated/` (build artifacts, gitignored) live beside them. Humans review the JSON files directly; root `tools/content/` provides the profile-specific content checks.
 - **`engine/`** renders and packages courses. `tools/aiclass.mjs` is the CLI behind all `course:*`/`lesson:*` scripts (it also validates plans — e.g. rejects `directFormula` misuse, `knowledge` in problemBrief). `workspace.local.json` (uncommitted; see `workspace.example.json`) points the CLI at local plan roots. Interaction widgets: `oral`, `choice`, `fill` under `src/widgets/`.
 
 ### Production state machine
 
 ```text
-board → outline → (figure if needsFigure) → plan → arrange → codegen → check/generate/preview → (export optional)
+course:new → outline → (figure if needsFigure) → plan → arrange → codegen → check/generate/preview → (export optional)
 ```
 
-Gates: **图形 OK** is the only human gate. `outlineOk` / `planOk` / `previewOk` are auto-written after check/preview. One `courseId` at a time; example preview 通过后自动开练题。
+Figure 确认（图形 OK）：唯一人工验收，落点为 `figure-spec.json` 的 `status: "confirmed"`（`plan-check` 强制校验）；预览验收由 agent 在对话中记录。一门课一次只推进一个 courseId；example preview 通过后自动开练题。
 
-### Key content contracts (enforced by `plan:check` + `course:check`)
+### Key content contracts (enforced by `content:check:figure` + `course:check`)
 
 - example/practice `teachingStages[]` follow the fixed spine: `read-problem/审题环节 → entry-point/从哪入手 → derivation stages ×N (problem-specific names, each with loop from→get) → 提取已知 → 列式计算` (typically 4–8 stages, more for multi-difficulty long chains); exam-point interactions are designed in the outline (`tests` required) and transcribed verbatim by fill — **group 1 (审题) has no interactions**; **group 2..N each carry ≥1 interaction**: stages without an outline interaction get a fill-authored simple process-level micro-question (choice/oral/fill, answerable in one move).
 - **Fill expands each stage into micro-steps**: `loop.get` is a destination, never a display — every intermediate quantity, substitution, and algebraic move is its own step, derived live with right-column lines that **append downward** (new `replaceKey` each beat; do not overwrite prior board with the same key); dumping the stage result as a block is the 20-point failure mode.
@@ -79,10 +67,10 @@ Gates: **图形 OK** is the only human gate. `outlineOk` / `planOk` / `previewOk
 - `agent.description` is a **TTS verbatim script**: pure Chinese — no digits, lowercase letters, or math symbols (write 加/减/乘/除/三角形/度…; uppercase geometry point names like 三角形ABD are allowed), and no parenthetical screen/animation notes (those go in `figure.note`/`moduleNote`). Existing pre-rule lessons are grandfathered — do not rewrite them.
 - `guidanceChain` entries carry **`title` only** — `desc`/`guidanceDesc` is removed everywhere (the courseware UI no longer shows stage subtitles).
 - Figure confirmation is done by **drawing, not describing**: figure-space-clarify produces `figure-spec.json` + `figure-preview.html` (JSXGraph, vendored lib) for human review; the preview stays in the lesson folder as the reference for the real figure module.
-- Every course gets its **own debug page** at `courses/<courseId>/debug/index.html` (built during codegen, kept in the course folder).
+- Every course gets its **own debug page** at `_output_/{grade}/<courseId>/debug/index.html` (built during codegen, kept in the course folder).
 
 ## Repo rules (from AGENTS.md)
 
 - Edit SOP bodies only under `skills/`; do not create alternate SOP trees.
-- Lesson content lives in `math_syllabus/lesson/{id}/`; never treat `.generated/` as source of truth.
-- All work happens on branch `dev` (user convention for this fork).
+- Lesson content lives in `_output_/{grade}/{courseId}/{problemId}/`; never treat `.generated/` or `dist/` as source of truth.
+- All work happens on branch `skills` (user convention for this fork).

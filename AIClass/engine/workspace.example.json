@@ -1,7 +1,4 @@
 {
-  "authoringRoots": {
-    "mathSyllabus": "../math_syllabus"
-  },
   "runtime": {
     "katexBase": "vendor/katex/",
     "jsxgraphBase": "vendor/jsxgraph/"

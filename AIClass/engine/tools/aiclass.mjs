@@ -6,10 +6,10 @@ import { spawn } from 'node:child_process'
 import Ajv2020 from 'ajv/dist/2020.js'
 import AdmZip from 'adm-zip'
 import { courseIdFromInput, validSlug } from './course-id-from-md.mjs'
+import { outputLessonDir, outputCourseDir, findOutputCourseDir, platformRoot } from '../../../shared/output-paths.mjs'
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
 const repoRoot = path.dirname(root)
-const coursesRoot = path.join(repoRoot, 'courses')
 const generatedName = '.generated'
 const referenceSentinels = [
   'AICLASS_REFERENCE_ONLY',
@@ -58,6 +58,186 @@ function collectFigureModulePaths(courseDir) {
     .map((name) => `lesson/modules/${name}`)
 }
 
+/**
+ * 从 figure-spec 生成 _<template>-figure.js 注册模块。
+ * 运行时用 JSXGraph 画函数曲线与关键点，向 AIClassFigureRegistry 注册，
+ * 使容器 figure 字段（figureTemplate 字符串 id）能被 resolve 并渲染。
+ */
+function generateFigureModule(spec) {
+  const template = spec && spec.figureTemplate
+  if (!template) return null
+  const specJson = safeJsonForScript(spec)
+  return {
+    name: `_${template}-figure.js`,
+    source: `// @generated from figure-spec ${spec.id || ''}; do not edit.
+;(function () {
+  'use strict'
+  var SPEC = ${specJson}
+  var root = null
+  var board = null
+  var els = null
+  var state = 'default'
+
+  function mount(target) {
+    if (root) return
+    root = target
+    root.setAttribute('data-figure-template', SPEC.figureTemplate)
+    AIClassJSXGraph.ready().then(function () {
+      if (!root) return
+      var mounted = JXGKit2D.mount(root, { board: SPEC.board || {} })
+      board = mounted.board
+      els = drawFigure(board, SPEC)
+      applyState(state)
+    }).catch(function (err) {
+      if (root) root.textContent = '图形加载失败: ' + err.message
+    })
+  }
+
+  function drawFigure(board, spec) {
+    var els = { points: {}, curves: [], segments: {}, lines: {}, polygons: [], texts: [] }
+    var points = {}
+    Object.keys(spec.points || {}).forEach(function (name) {
+      var raw = spec.points[name]
+      var coords = Array.isArray(raw) ? raw : (raw.coords || raw.xy)
+      var visible = raw && raw.visible !== false
+      var label = raw && raw.name != null ? String(raw.name) : name
+      var p = board.create('point', coords, {
+        name: visible ? label : '',
+        withLabel: visible && label !== '',
+        visible: visible,
+        size: 3,
+        fixed: true,
+        highlight: false,
+        showInfobox: false,
+        fillColor: '#2563eb',
+        strokeColor: '#1e40af'
+      })
+      points[name] = p
+      els.points[name] = p
+    })
+    ;(spec.functions || []).forEach(function (fn) {
+      var expr = fn.expr || fn.expression
+      if (!expr) return
+      var curve = board.create('functiongraph', [
+        function (x) { return evalExpr(expr, x) }
+      ], {
+        strokeColor: fn.strokeColor || '#1d4ed8',
+        strokeWidth: fn.strokeWidth != null ? fn.strokeWidth : 2.5,
+        visible: fn.visible !== false,
+        fixed: true,
+        highlight: false
+      })
+      els.curves.push(curve)
+    })
+    ;(spec.segments || []).forEach(function (item) {
+      var from = Array.isArray(item) ? item[0] : item.from
+      var to = Array.isArray(item) ? item[1] : item.to
+      var attrs = Array.isArray(item) ? (item[2] || {}) : Object.assign({}, item)
+      delete attrs.from
+      delete attrs.to
+      var seg = board.create('segment', [points[from], points[to]], Object.assign({
+        strokeColor: '#1e293b',
+        strokeWidth: 2,
+        visible: true,
+        fixed: true,
+        highlight: false
+      }, attrs))
+      var id = String(from) + String(to)
+      els.segments[id] = seg
+      els.segments[String(to) + String(from)] = seg
+    })
+    ;(spec.lines || []).forEach(function (item) {
+      var from = Array.isArray(item) ? item[0] : item.from
+      var to = Array.isArray(item) ? item[1] : item.to
+      var attrs = Array.isArray(item) ? (item[2] || {}) : Object.assign({}, item)
+      delete attrs.from
+      delete attrs.to
+      var line = board.create('line', [points[from], points[to]], Object.assign({
+        strokeColor: '#1e293b',
+        strokeWidth: 2,
+        visible: true,
+        fixed: true,
+        highlight: false
+      }, attrs))
+      var id = String(from) + String(to)
+      els.lines[id] = line
+      els.lines[String(to) + String(from)] = line
+    })
+    ;(spec.polygons || []).forEach(function (poly) {
+      var verts = (poly.vertices || poly.points || []).map(function (v) { return points[v] })
+      var polyEl = board.create('polygon', verts, Object.assign({
+        fillColor: poly.fillColor || '#3b82f6',
+        fillOpacity: poly.fillOpacity != null ? poly.fillOpacity : 0.25,
+        borders: { strokeColor: '#1e293b', strokeWidth: 2, visible: true },
+        visible: poly.visible !== false,
+        fixed: true,
+        highlight: false,
+        vertices: { visible: false, fixed: true }
+      }, poly))
+      els.polygons.push(polyEl)
+    })
+    ;(spec.texts || []).forEach(function (t) {
+      var content = t.text
+      var parents
+      if (typeof t.at === 'string') {
+        var p = points[t.at]
+        parents = [function () { return p.X() }, function () { return p.Y() }, content]
+      } else {
+        parents = [t.at[0], t.at[1], content]
+      }
+      var attrs = Object.assign({}, t)
+      delete attrs.at
+      delete attrs.text
+      board.create('text', parents, Object.assign({
+        fixed: true,
+        highlight: false,
+        fontSize: 14,
+        visible: t.visible !== false
+      }, attrs))
+    })
+    return els
+  }
+
+  function evalExpr(expr, x) {
+    var safe = String(expr).replace(/x/g, '(' + x + ')')
+    // eslint-disable-next-line no-new-func
+    return Function('"use strict"; return (' + safe + ')')()
+  }
+
+  function applyState(next) {
+    state = next || 'default'
+    if (root) root.setAttribute('data-figure-state', state)
+  }
+
+  function setState(next) {
+    applyState(next)
+  }
+
+  function reset() {
+    applyState('default')
+  }
+
+  function teardown() {
+    if (root) root.removeAttribute('data-figure-state')
+    if (root) root.removeAttribute('data-figure-template')
+    root = null
+    board = null
+    els = null
+  }
+
+  window.AIClassFigureRegistry.register(SPEC.figureTemplate, {
+    states: Object.keys(SPEC.states || {}),
+    capabilities: Object.keys(SPEC.actions || {}),
+    mount: mount,
+    setState: setState,
+    reset: reset,
+    teardown: teardown
+  })
+})()
+`
+  }
+}
+
 function removeDirectory(target) {
   fs.rmSync(target, { recursive: true, force: true })
 }
@@ -89,7 +269,9 @@ function courseDirectory(courseId) {
   if (!validSlug(courseId)) {
     throw new Error('courseId must be a 2-48 character lowercase ASCII slug.')
   }
-  return path.join(coursesRoot, courseId)
+  const dir = findOutputCourseDir(courseId)
+  if (!dir) throw new Error(`Course not found: ${courseId}`)
+  return dir
 }
 
 function loadCourse(courseId) {
@@ -130,7 +312,7 @@ function checkCourse(course) {
   validateAgainstSchema(
     course.config,
     path.join(root, 'schemas', 'course.schema.json'),
-    `courses/${course.config.courseId}/course.json`
+    `_output_/${course.config.grade}/${course.config.courseId}/course.json`
   )
   if (course.config.courseId !== path.basename(course.dir)) {
     throw new Error('courseId must match its directory name.')
@@ -176,14 +358,10 @@ function resolvePlan(course, problem) {
     assertInside(course.dir, local, 'planPath')
     return local
   }
-  const workspace = loadWorkspace()
-  const rootKey = course.config.authoring.rootKey
-  const configured = workspace.authoringRoots && workspace.authoringRoots[rootKey]
-  if (!configured) {
-    throw new Error(`workspace.local.json does not map authoring root "${rootKey}"`)
+  if (course.config.authoring.rootKey !== 'output') {
+    throw new Error('course.json authoring.rootKey must be "output".')
   }
-  const authoringRoot = path.resolve(root, configured)
-  return path.join(authoringRoot, 'lesson', problem.problemId, 'plan.json')
+  return path.join(outputLessonDir(course.config.grade, course.config.courseId, problem.problemId), 'plan.json')
 }
 
 function normalizePlan(raw) {
@@ -546,9 +724,11 @@ function generatedModule(plan, problem, displayIndex) {
         ...(plan.quickQALayout ? { quickQALayout: plan.quickQALayout } : {}),
         ...(plan.layout === 'top-split'
           ? { layoutParams: { ...DEFAULT_TOP_SPLIT_LAYOUT, ...(plan.layoutParams || {}) } }
-          : plan.layoutParams
-            ? { layoutParams: plan.layoutParams }
-            : {}),
+          : plan.layout === 'text-only'
+            ? { layoutParams: { edgePad: 32, textMaxWidth: 'none', gap: 28, ...(plan.layoutParams || {}) } }
+            : plan.layoutParams
+              ? { layoutParams: plan.layoutParams }
+              : {}),
         ...(plan.style ? { style: plan.style } : {}),
         textAccumulate: true,
         steps: [
@@ -635,9 +815,9 @@ function buildLessonMeta(course) {
 }
 
 function relativeToRepo(file) {
-  const relative = path.relative(repoRoot, file)
+  const relative = path.relative(platformRoot, file)
   if (relative.startsWith('..') || path.isAbsolute(relative)) {
-    throw new Error(`Debug editing only supports plans inside the repository: ${file}`)
+    throw new Error(`Debug editing only supports plans inside the monorepo: ${file}`)
   }
   return relative.split(path.sep).join('/')
 }
@@ -645,7 +825,7 @@ function relativeToRepo(file) {
 function buildDebugEditMap(course, snapshots) {
   const courseId = course.config.courseId
   const grade = course.config.grade
-  const base = `courses/${courseId}/.generated`
+  const base = `_output_/${grade}/${courseId}/.generated`
   const dist = `dist/${grade}/${courseId}/course/runtime`
   const actions = []
   for (const snapshot of Object.values(snapshots)) {
@@ -778,6 +958,19 @@ function generateCourse(courseId) {
     modules.push(`lesson/modules/${moduleName}`)
     catalog.push(...actionCatalog(plan, output.module))
     snapshots[plan.id] = { planFile, plan, module: output.module, moduleFile: moduleName }
+
+    // 有图题：从 figure-spec 生成 figure 注册模块（持久源目录，供 manifest 收集）
+    if (plan.figureTemplate) {
+      const specFile = path.join(path.dirname(planFile), 'figure-spec.json')
+      if (fs.existsSync(specFile)) {
+        const figure = generateFigureModule(readJson(specFile))
+        if (figure) {
+          const figureDir = path.join(course.dir, 'lesson', 'modules')
+          fs.mkdirSync(figureDir, { recursive: true })
+          writeText(path.join(figureDir, figure.name), figure.source)
+        }
+      }
+    }
   }
 
   catalog = mergeCatalogs(catalog, loadAuthoredCatalog(course))
@@ -991,31 +1184,11 @@ function exportCourse(courseId, options = {}) {
     for (const entry of zip.getEntries()) entry.header.time = stableTime
     zip.writeZip(artifact)
   }
-  syncMonorepoDebug(course, finalDir)
   return { ...result, finalDir }
 }
 
-/** Copy exported debug.html to monorepo root for quick local open. */
-function syncMonorepoDebug(course, finalDir) {
-  const courseId = course.config.courseId
-  const grade = course.config.grade
-  const monorepoRoot = path.join(root, '..')
-  const marker = path.join(monorepoRoot, 'docs', 'production')
-  if (!fs.existsSync(marker)) return
-  const sourceDebug = path.join(finalDir, 'debug.html')
-  if (!fs.existsSync(sourceDebug)) return
-  const targetDebug = path.join(monorepoRoot, 'debug.html')
-  let text = fs.readFileSync(sourceDebug, 'utf8')
-  text = text.replace(
-    /var iframeSrc = params\.get\('src'\) \|\| '[^']*'/,
-    `var iframeSrc = params.get('src') || '../dist/${grade}/${courseId}/index.html'`
-  )
-  fs.writeFileSync(targetDebug, text, 'utf8')
-  console.log(`Synced monorepo debug.html → current course ${courseId}`)
-}
-
 function newCourse(courseId, title, grade) {
-  const target = courseDirectory(courseId)
+  const target = outputCourseDir(grade, courseId)
   if (fs.existsSync(target)) throw new Error(`Course already exists: ${courseId}`)
   copyDirectory(path.join(root, 'templates', 'course'), target)
   const source = path.join(target, 'course.template.json')
@@ -1025,20 +1198,7 @@ function newCourse(courseId, title, grade) {
     .replaceAll('__COURSE_TITLE__', title || courseId)
   writeText(path.join(target, 'course.json'), config)
   fs.unlinkSync(source)
-  const pipeTplName = 'pipeline.template.json'
-  const pipeCopied = path.join(target, pipeTplName)
-  const pipeTpl = path.join(root, 'templates', 'course', pipeTplName)
-  if (fs.existsSync(pipeTpl)) {
-    const pipe = JSON.parse(
-      fs.readFileSync(pipeTpl, 'utf8').replaceAll('__COURSE_ID__', courseId)
-    )
-    writeJson(path.join(target, 'pipeline.json'), pipe)
-  }
-  if (fs.existsSync(pipeCopied)) fs.unlinkSync(pipeCopied)
-  for (const dir of ['lesson/modules', 'lesson/extensions', 'assets', 'authoring']) {
-    fs.mkdirSync(path.join(target, dir), { recursive: true })
-  }
-  console.log(`Created courses/${courseId}`)
+  console.log(`Created _output_/${grade}/${courseId}`)
 }
 
 function restoreCourse(spec) {

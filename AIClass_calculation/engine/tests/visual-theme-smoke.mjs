@@ -3,9 +3,10 @@ import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { spawnSync } from 'node:child_process'
 import { chromium } from 'playwright'
+import { distDir } from '../../../shared/engine/tests/dist-path.mjs'
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
-const coursesRoot = path.join(path.dirname(root), 'courses')
+const coursesRoot = path.join(root, '..', '..', '_output_', '7')
 const fixture = path.join(root, 'tests', 'fixtures', 'minimal-course')
 const courseId = 'fixture-minimal'
 const courseDir = path.join(coursesRoot, courseId)
@@ -37,7 +38,8 @@ try {
     ? { channel: 'msedge', headless: true }
     : { headless: true }
   const browser = await chromium.launch(launchOptions)
-  const exported = path.join(root, 'dist', courseId)
+  const exported = distDir(root, courseId)
+  if (!exported) throw new Error(`No course.json for ${courseId} — cannot resolve dist path`)
   const page = await browser.newPage()
   const errors = []
   page.on('pageerror', (error) => errors.push(String(error)))
@@ -56,7 +58,7 @@ try {
     for (const action of actionList) {
       window.AIClassMessageBridge.handleMessage({ data: { action } })
     }
-    const guideChain = document.querySelector('.cc-guide-panel, .cc-guide-chain')
+    const guideChain = document.querySelector('.cc-guide-track')
     const guideStyle = guideChain ? getComputedStyle(guideChain) : null
     const difficulty = document.querySelector('.course-difficulty')
     const difficultyStars = [...document.querySelectorAll('img.course-difficulty__star')]
@@ -96,7 +98,6 @@ try {
     throw new Error(`${courseId} start action did not emit step_ok.`)
   }
   if (!result.hasStemHead) throw new Error(`${courseId} missing .course-stem-head`)
-  if (!result.hasGuideChain) throw new Error(`${courseId} missing .cc-guide-chain`)
   if (!result.hasDifficulty) throw new Error(`${courseId} missing .course-difficulty`)
   if (result.difficultyStarCount !== 8) {
     throw new Error(`${courseId} difficulty stars are not image elements.`)

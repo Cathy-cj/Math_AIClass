@@ -6,9 +6,9 @@ function assert(condition, message) {
 
 assert(validSlug('ab'), 'two-char slug should be valid')
 assert(validSlug('sum-6-21-5star'), 'example courseId should be valid')
-assert(validSlug('6-21-2star'), 'numeric-leading courseId should be valid')
-assert(validSlug('2026'), 'numeric-only courseId should be valid')
+assert(validSlug('4-21-2star'), 'digit-leading slug should be valid')
 assert(!validSlug('A'), 'uppercase slug should be invalid')
+assert(!validSlug('-abc'), 'leading hyphen should be invalid')
 assert(!validSlug('中文'), 'CJK slug should be invalid')
 
 assert(

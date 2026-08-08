@@ -11,7 +11,7 @@
     "title": { "type": "string", "minLength": 1 },
     "source": { "type": "string" },
     "moduleType": { "enum": ["knowledge", "example", "practice", "homework"] },
-    "difficulty": { "type": "integer", "minimum": 1, "maximum": 6 },
+    "difficulty": { "type": "integer", "minimum": 1, "maximum": 8 },
     "layout": {
       "enum": ["text-only", "figure-text", "top-split", "left-right", "text-over-figure"]
     },

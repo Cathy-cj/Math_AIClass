@@ -10,14 +10,12 @@
     "course:preview": "node tools/aiclass.mjs course:preview",
     "course:export": "node tools/aiclass.mjs course:export",
     "course:restore": "node tools/aiclass.mjs course:restore",
-    "pipeline:board": "node tools/pipeline-board.mjs",
     "figure:preview": "node tools/figure-preview.mjs",
     "test": "node tests/run-tests.mjs",
-    "test:browser": "node tests/browser-smoke.mjs && node tests/overlay-scrollbar-pin-smoke.mjs",
-    "test:course-browser": "node tests/course-browser-smoke.mjs",
+    "test:browser": "node tests/browser-smoke.mjs && node ../../shared/engine/tests/overlay-scrollbar-pin-smoke.mjs .",
     "test:visual-theme": "node tests/visual-theme-smoke.mjs",
     "test:debug-shell": "node tests/debug-shell-smoke.mjs",
-    "test:stem-zoom": "node tests/stem-zoom-fit-smoke.mjs && node tests/stem-zoom-smoke.mjs"
+    "test:stem-zoom": "node ../../shared/engine/tests/stem-zoom-fit-smoke.mjs . && node ../../shared/engine/tests/stem-zoom-smoke.mjs ."
   },
   "dependencies": {
     "adm-zip": "^0.6.0",

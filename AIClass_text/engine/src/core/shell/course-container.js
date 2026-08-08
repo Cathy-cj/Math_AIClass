@@ -458,6 +458,18 @@
     })
   }
 
+  CourseContainer.prototype._syncFillBlocks = function (activeStepId) {
+    allScrollEls(this).forEach(function (scrollEl) {
+      scrollEl.querySelectorAll('.lf-block[data-block-type="fill"]').forEach(function (block) {
+        var api = block._fillApi
+        if (!api || typeof api.setRevealed !== 'function') return
+        var sid = block.getAttribute('data-step-id')
+        var isActive = activeStepId != null && String(sid) === String(activeStepId)
+        if (!isActive && api.hasAnswer) api.setRevealed(true)
+      })
+    })
+  }
+
   CourseContainer.prototype.finalizeInteractions = function (activeStepId) {
     forEachBlockInContainer(this, function (block) {
       var sid = block.getAttribute('data-step-id')
@@ -469,6 +481,7 @@
       })
     })
     this._syncChoiceBlocks(activeStepId)
+    this._syncFillBlocks(activeStepId)
     if (window.AIClassComponent && typeof window.AIClassComponent.syncMathKeyboard === 'function') {
       window.AIClassComponent.syncMathKeyboard()
     }

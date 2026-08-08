@@ -27,7 +27,6 @@
     'core/layout/stage-scroll-lock.js',
     'core/layout/overlay-mount.js',
     'screens/pre-lesson/pre-lesson.js',
-    'screens/feynman/feynman-flow.js',
     'config/concept-sheet-resolver.js',
     'screens/concept-sheet/concept-sheet-flow.js',
 
@@ -61,7 +60,6 @@
     'widgets/choice.js',
     'widgets/chain.js',
     'widgets/read-list.js',
-    'widgets/feynman-quad.js',
 
     // core/session — 必须在 toolkit 之后加载
     'core/shell/container-host.js',

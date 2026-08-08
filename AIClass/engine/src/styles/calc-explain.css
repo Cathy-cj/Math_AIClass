@@ -1,6 +1,6 @@
 /* 纯计算呈现样式（引擎一等公民）
    提取自 module_template/lesson/styles/lesson.css
-   契约见 skills/lesson-plan/calculation-marks.md */
+   契约见 skills/plan/calculation/presentation.md */
 
 /* ── 卷面标签【要点】【详解】【答案】 ── */
 .course-container .lf-block.calc-label {
@@ -36,8 +36,7 @@
   flex-wrap: wrap;
   align-items: baseline;
   padding: 0.45em 0.75em;
-  background: rgba(22, 163, 74, 0.08);
-  border-left: 3px solid #16a34a;
+  background: #dcfce7;
   border-radius: 0 8px 8px 0;
 }
 
@@ -344,14 +343,15 @@
   -webkit-backdrop-filter: blur(8px);
 }
 
-/* left-right 题头已在 scroll-top 文档流内，去掉引擎为绝对定位预留的 36px 顶空 */
-.course-container[data-layout="left-right"] .course-body {
+/* left-right / text-only 题头已在 scroll-top 文档流内，去掉引擎为绝对定位预留的 36px 顶空 */
+.course-container:is([data-layout="left-right"], [data-layout="text-only"]) .course-body {
   padding-top: 8px;
 }
 
-/* 多题纵向叠放：每题至少一屏（top-split 例题 + left-right 练习） */
+/* 多题纵向叠放：每题至少一屏（top-split 例题 + left-right / text-only 练习） */
 .course-flow.course-flow--stack:has(.course-container[data-layout="top-split"]),
-.course-flow.course-flow--stack:has(.course-container[data-layout="left-right"]) {
+.course-flow.course-flow--stack:has(.course-container[data-layout="left-right"]),
+.course-flow.course-flow--stack:has(.course-container[data-layout="text-only"]) {
   height: auto;
   min-height: 100%;
   overflow: visible;
@@ -360,7 +360,8 @@
 }
 
 .course-flow.course-flow--stack .course-container[data-layout="top-split"],
-.course-flow.course-flow--stack .course-container[data-layout="left-right"] {
+.course-flow.course-flow--stack .course-container[data-layout="left-right"],
+.course-flow.course-flow--stack .course-container[data-layout="text-only"] {
   flex: none;
   min-height: var(--cc-stack-panel-min, 680px);
   height: var(--cc-stack-panel-min, 680px);
@@ -368,6 +369,7 @@
 }
 
 .course-flow.course-flow--stack .course-container[data-layout="top-split"]:last-child,
-.course-flow.course-flow--stack .course-container[data-layout="left-right"]:last-child {
+.course-flow.course-flow--stack .course-container[data-layout="left-right"]:last-child,
+.course-flow.course-flow--stack .course-container[data-layout="text-only"]:last-child {
   margin-bottom: 0;
 }

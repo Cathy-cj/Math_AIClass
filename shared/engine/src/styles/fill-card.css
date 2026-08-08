@@ -83,14 +83,15 @@
   flex: 1 1 auto;
   min-width: 100%;
   width: 100%;
+  min-height: 42px;
+  height: auto;
+  padding: 4px 12px;
   text-align: left;
-  padding: 0 2px 3px;
   font-size: inherit;
   font-weight: 400;
   color: var(--cc-ink, #0f172a);
-  background: transparent;
-  border: none;
-  border-bottom: 3px solid rgba(15, 23, 42, 0.72);
+  border-color: #c7d2e0;
+  background: #f6f8fb;
 }
 
 .course-container .lf-fill-card .lf-fill-input--revealed,
@@ -98,17 +99,14 @@
   font-weight: 400;
 }
 
-.course-container .lf-fill-card .lf-fill-input[readonly]:not(:disabled) {
-  border-bottom-color: rgba(15, 23, 42, 0.72);
-}
-
 .course-container .lf-fill-card .lf-fill-input.is-active:not(:disabled) {
-  border-bottom-color: rgba(15, 23, 42, 0.88);
+  border-color: #2563eb;
 }
 
 .course-container .lf-fill-card .lf-fill-input::placeholder {
-  color: rgba(15, 23, 42, 0.38);
+  color: #9aa8ba;
   font-weight: 400;
+  opacity: 1;
 }
 
 .course-container .lf-fill-card .lf-fill-actions {

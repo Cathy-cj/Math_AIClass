@@ -5,6 +5,7 @@
   "grade": 7,
   "title": "合成测试课程",
   "version": "0.1.0",
+  "profile": "figure",
   "engine": {
     "range": "^1.0.0",
     "requiredCapabilities": [

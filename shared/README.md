@@ -12,7 +12,7 @@ shared/
   engine/src/widgets/         课件内容块渲染器（9）
   engine/src/styles/          共享样式（16）
   engine/src/core/            layout(5) + scroll(2) + session(3)
-  engine/src/screens/         pre-lesson / concept-sheet / feynman（6）
+  engine/src/screens/         pre-lesson / concept-sheet（4）
   engine/src/config/          配置（2）
   engine/src/boot/            lesson-scripts.js
   engine/src/bridge/          message-bridge.js
@@ -23,7 +23,7 @@ shared/
 
 ## 约定
 
-- **shared 与三个模板仓库同级**（都在本 monorepo `G:\A-tem\templates\` 下），运行时用
+- **shared 与三个模板仓库同级**（都在本 monorepo 根下），运行时用
   `document.currentScript.src` 推导共享根，无需写死路径
 - 模板仓库 git 中**不保留这些文件的副本**；模板的 `engine-manifest.js` / `loader.js`
   通过 `AICLASS_SHARED_ROOT` 加载共享模块
@@ -31,5 +31,5 @@ shared/
 
 ## 各仓库独有内容（不在本目录）
 
-- `courses/<courseId>/`、`math_syllabus/lesson/<id>/`、`engine/dist/`、`debug/`（git 忽略，本地生成）
+- `_output_/{grade}/<courseId>/<problemId>/`、`dist/<grade>/<courseId>/`、`debug/`（本地课件内容与发布产物）
 - 差异化引擎文件：`course-container.js`、`container-host.js`、`mathlive.js` 等（各仓库保留）

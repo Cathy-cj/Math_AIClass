@@ -42,6 +42,11 @@
   }
 
   function normalizeRegion(block, layout) {
+    if (layout === 'text-only') {
+      var tr = block.region || block.zone || 'main'
+      if (tr === 'top') return 'top'
+      return 'main'
+    }
     if (!SPLIT_LAYOUTS[layout]) return 'main'
     if (layout === 'left-right') {
       var lr = block.region || block.zone || 'right'
@@ -57,6 +62,10 @@
   }
 
   function scrollTargetFor(container, region) {
+    if (container.layout === 'text-only') {
+      if (region === 'top') return container.scrollEl
+      return container.scrollStackEl || container.scrollRightEl || container.scrollEl
+    }
     if (!SPLIT_LAYOUTS[container.layout]) return container.scrollEl
     if (container.layout === 'left-right') {
       if (region === 'top') return container.scrollEl
@@ -68,6 +77,9 @@
   }
 
   function allScrollEls(container) {
+    if (container.layout === 'text-only') {
+      return [container.scrollEl, container.scrollRightEl, container.scrollStackEl].filter(Boolean)
+    }
     if (!SPLIT_LAYOUTS[container.layout]) {
       return container.scrollEl ? [container.scrollEl] : []
     }
@@ -211,7 +223,7 @@
   CourseContainer.prototype.getInstanceId = function () { return this.instanceId }
   CourseContainer.prototype.getScrollEl = function () { return this.scrollEl }
   CourseContainer.prototype.getFollowScrollEl = function () {
-    if (this.layout === 'left-right' || this.layout === 'top-split') {
+    if (this.layout === 'left-right' || this.layout === 'top-split' || this.layout === 'text-only') {
       return this.scrollRightEl || null
     }
     return null
@@ -285,7 +297,8 @@
 
       var region = normalizeRegion(block, layout)
       var target = scrollTargetFor(self, region)
-      if (self.guidanceLayout === 'interleaved' && region === 'right' &&
+      if (self.guidanceLayout === 'interleaved' &&
+          (region === 'main' || region === 'right') &&
           ctx.group != null && self.guideSlotEls && self.guideSlotEls[ctx.group]) {
         target = self.guideSlotEls[ctx.group]
       }
@@ -346,7 +359,9 @@
         window.AIClassLatex.render(scrollEl)
       })
     }
-    if (this.layout === 'left-right' && this.guidanceLayout !== 'interleaved') {
+    if (this.guidanceLayout === 'interleaved') {
+      if (this.layout === 'text-only') this.placeGuidanceInStack()
+    } else if (this.layout === 'left-right' || this.layout === 'text-only') {
       this.placeGuidanceInStack()
       if (this.scrollStackEl) {
         var tailSpacer = this.scrollStackEl.querySelector('.sf-scroll-spacer')
@@ -355,11 +370,6 @@
           this.scrollStackEl.appendChild(tailSpacer)
         }
       }
-    } else if (this.guidanceLayout === 'interleaved') {
-      var self = this
-      requestAnimationFrame(function () {
-        self._updateGuideRailHeight()
-      })
     }
     if (self.scrollRightEl && self.scrollRightEl._overlayScrollbarApi &&
         typeof self.scrollRightEl._overlayScrollbarApi.sync === 'function') {
@@ -369,8 +379,10 @@
   }
 
   CourseContainer.prototype._photoAnswerTarget = function () {
-    // left-right：右边正文栈（题干下方、讲解 guide 上方）
-    if (this.layout === 'left-right') return this.scrollStackEl || this.scrollRightEl
+    // left-right / text-only：右边正文栈（题干下方、讲解 guide 上方）
+    if (this.layout === 'left-right' || this.layout === 'text-only') {
+      return this.scrollStackEl || this.scrollRightEl
+    }
     if (this.layout === 'top-split') return this.scrollRightEl || this.scrollEl
     return this.scrollEl
   }
@@ -470,6 +482,18 @@
     })
   }
 
+  CourseContainer.prototype._syncFillBlocks = function (activeStepId) {
+    allScrollEls(this).forEach(function (scrollEl) {
+      scrollEl.querySelectorAll('.lf-block[data-block-type="fill"]').forEach(function (block) {
+        var api = block._fillApi
+        if (!api || typeof api.setRevealed !== 'function') return
+        var sid = block.getAttribute('data-step-id')
+        var isActive = activeStepId != null && String(sid) === String(activeStepId)
+        if (!isActive && api.hasAnswer) api.setRevealed(true)
+      })
+    })
+  }
+
   CourseContainer.prototype.finalizeInteractions = function (activeStepId) {
     forEachBlockInContainer(this, function (block) {
       var sid = block.getAttribute('data-step-id')
@@ -481,6 +505,7 @@
       })
     })
     this._syncChoiceBlocks(activeStepId)
+    this._syncFillBlocks(activeStepId)
     if (window.AIClassComponent && typeof window.AIClassComponent.syncMathKeyboard === 'function') {
       window.AIClassComponent.syncMathKeyboard()
     }
@@ -842,13 +867,13 @@
 
       container.scrollLeftEl = scrollLeft
       container.scrollRightEl = scrollRight
-    } else if (layout === 'left-right') {
+    } else if (layout === 'left-right' || layout === 'text-only') {
       scroll.className = 'course-scroll course-scroll-top'
 
       var mainRow = document.createElement('div')
       mainRow.className = 'course-main'
 
-      if (options.figure) {
+      if (layout === 'left-right' && options.figure) {
         figureSlot = document.createElement('div')
         figureSlot.className = 'course-figure'
         if (typeof window.AIClassFigureHost !== 'undefined') {

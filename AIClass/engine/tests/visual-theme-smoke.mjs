@@ -3,10 +3,10 @@ import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { spawnSync } from 'node:child_process'
 import { chromium } from 'playwright'
-import { distDir } from './dist-path.mjs'
+import { distDir } from '../../../shared/engine/tests/dist-path.mjs'
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
-const coursesRoot = path.join(path.dirname(root), 'courses')
+const coursesRoot = path.join(root, '..', '..', '_output_', '7')
 const fixture = path.join(root, 'tests', 'fixtures', 'minimal-course')
 const courseId = 'fixture-minimal'
 const courseDir = path.join(coursesRoot, courseId)
@@ -110,8 +110,8 @@ try {
     throw new Error(`${courseId} stylesheet chain incomplete.`)
   }
   if (result.labelText !== '例') throw new Error('Generated header label must be 例.')
-  if (result.sourceText !== '（合成测试来源）') {
-    throw new Error('Generated source text is incorrect.')
+  if (result.sourceText) {
+    throw new Error('Course source must not be rendered.')
   }
   console.log(`Visual theme smoke passed: ${courseId}`)
 } finally {

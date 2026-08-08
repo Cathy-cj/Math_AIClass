@@ -4,9 +4,8 @@
 
 ```text
 AIClass/                          monorepo 根
-├─ courses/<course-id>/           课件源（独立包）
+├─ ../_output_/{grade}/<course-id>/  课件源（独立包：course.json + outline/plan + debug/.generated）
 ├─ math_syllabus/                 内容规划（独立包）
-├─ docs/production/               跨包 L0 文档区
 └─ engine/                        本包
    ├─ src/                        共享运行时
    │  ├─ boot/ bridge/ config/
@@ -20,9 +19,9 @@ AIClass/                          monorepo 根
    │  └─ assets/                  仅通用资源（如 stars）
    ├─ templates/                  无业务骨架
    ├─ schemas/
-   ├─ tools/                      aiclass.mjs 等（coursesRoot = ../courses）
+   ├─ tools/                      aiclass.mjs 等（findOutputCourseDir = _output_/* 扫描）
    ├─ references/                 Plan 配方；不进导出
-   ├─ tests/fixtures/             合成课（测时拷到 ../courses）
+   ├─ tests/fixtures/             合成课（测时拷到 ../_output_/{grade}）
    ├─ vendor/                     katex / jsxgraph
    ├─ docs/                       本目录
    ├─ dist/ artifacts/            生成物，不提交
@@ -32,10 +31,9 @@ AIClass/                          monorepo 根
 ## 真源链
 
 ```text
-math_syllabus/lesson/{id}/plan.json
-  → courses/{courseId}/course.json
-  → lesson:generate → courses/{id}/.generated
-  → course:export → dist/{grade}/{id}（仓库根，按年级分目录）
+_output_/{grade}/{courseId}/{problemId}/plan.json   （course.json 注册表在同级）
+  → lesson:generate → _output_/{grade}/{courseId}/.generated
+  → course:export → dist/{grade}/{courseId}（仓库根，按年级分目录）
 ```
 
 禁止手改 `.generated/`、`dist/.../lesson/modules/` 当真源。
@@ -65,12 +63,12 @@ math_syllabus/lesson/{id}/plan.json
 | `view3d-animate.js` | 3D 视角动画 |
 | `kit.js` | **legacy** SVG 辅助；新图勿用 |
 
-跨包绘图约定：[`docs/production/figure-tooling.md`](../../docs/production/figure-tooling.md)。
+跨包绘图约定：根 [`skills/figure/specification.md`](../../../skills/figure/specification.md)。
 
-## `courses/`（仓库根）
+## `_output_/`（仓库根）
 
-一套课一个目录：`course.json`、modules、extensions、assets、styles。  
-课专属 Figure：`courses/<id>/lesson/modules/_*-figure.js`。
+一套课一个目录：`course.json`、{problemId}/、debug/、.generated/。  
+课专属 Figure：`_output_/{grade}/<id>/.generated/lesson/modules/_*-figure.js`。
 
 ## Vendor
 
@@ -111,5 +109,5 @@ iframe.contentWindow.postMessage({
 ## 相关文档
 
 - [commands.md](./commands.md)
-- [docs/production](../../docs/production/README.md)
+- 根 [skills/README.md](../../../skills/README.md)
 - archive/（发版与历史审计，非日常）

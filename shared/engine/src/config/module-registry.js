@@ -13,22 +13,6 @@
     return null
   }
 
-  function feynmanModules() {
-    return registry.modules.filter(function (mod) {
-      return mod.mount === 'feynman-overlay'
-    })
-  }
-
-  function feynmanMountConfig(mod) {
-    if (!mod || mod.mount !== 'feynman-overlay') return null
-    var payload = mod.feynman || {}
-    return Object.assign({
-      id: mod.feynmanId != null ? String(mod.feynmanId) : mod.id,
-      enterAction: mod.enterAction,
-      exitAction: mod.exitAction
-    }, payload)
-  }
-
   function scrollPlan() {
     return registry.modules.map(function (mod) {
       return {
@@ -94,8 +78,6 @@
     get sideEffects() { return registry.sideEffects || [] },
     init: init,
     getModule: getModule,
-    feynmanModules: feynmanModules,
-    feynmanMountConfig: feynmanMountConfig,
     scrollPlan: scrollPlan,
     conceptSheetByAction: conceptSheetByAction,
     resolveConceptSheetConfig: resolveConceptSheetConfig,

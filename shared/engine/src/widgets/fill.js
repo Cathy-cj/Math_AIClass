@@ -148,72 +148,90 @@
   }
 
   AIClassWidgetRegistry.register('fill', function (el, block, runtime, ctx) {
-    var wrap = document.createElement('div')
-    wrap.className = 'lf-fill' + (isCardFill(block) ? ' lf-fill-card' : '')
-    var inputs = []
-    var enabled = AIClassInteractionGate.isInteractive(block, runtime)
     var parts = block.parts || []
-    var submitLine = null
-    var rowLayout = useRowLayout(block, parts)
+    var hasAnswer = parts.some(function (part) {
+      part = part || {}
+      return (part.kind === 'blank' || part.type === 'blank') && part.answer != null && part.answer !== ''
+    })
 
-    if (rowLayout) {
-      parts.forEach(function (part) {
-        part = part || {}
-        if (part.kind !== 'blank' && part.type !== 'blank') {
-          var inlineLine = document.createElement('div')
-          inlineLine.className = 'lf-fill-line'
-          var inlineInput = renderPart(inlineLine, part, block, enabled)
-          if (inlineInput) inputs.push(inlineInput)
-          wrap.appendChild(inlineLine)
-          submitLine = inlineLine
-          return
-        }
-        if (isCardFill(block) || part.hint || part.label || part.formula) {
-          renderBlankRow(wrap, part, block, enabled, inputs)
-          return
-        }
-        var plainLine = document.createElement('div')
-        plainLine.className = 'lf-fill-line'
-        var plainInput = renderPart(plainLine, part, block, enabled)
-        if (plainInput) inputs.push(plainInput)
-        wrap.appendChild(plainLine)
-        submitLine = plainLine
-      })
-    } else {
-      var row = document.createElement('div')
-      row.className = 'lf-fill-line'
-      parts.forEach(function (part) {
-        var input = renderPart(row, part, block, enabled)
-        if (input) inputs.push(input)
-      })
-      wrap.appendChild(row)
-      submitLine = row
-    }
+    function render(enabled) {
+      el.innerHTML = ''
+      var wrap = document.createElement('div')
+      wrap.className = 'lf-fill' + (isCardFill(block) ? ' lf-fill-card' : '')
+      var inputs = []
+      var submitLine = null
+      var rowLayout = useRowLayout(block, parts)
 
-    if (enabled) {
-      if (!window.AIClassComponent || typeof window.AIClassComponent.createSubmitButton !== 'function') {
-        throw new Error('[fill widget] AIClassComponent.createSubmitButton is required')
-      }
-      var btn = window.AIClassComponent.createSubmitButton({
-        text: block.submitText || '提交',
-        onClick: function () { submitFill(inputs, block, ctx) }
-      })
       if (rowLayout) {
-        var actions = document.createElement('div')
-        actions.className = 'lf-fill-actions'
-        actions.appendChild(btn)
-        wrap.appendChild(actions)
-      } else if (submitLine) {
-        submitLine.appendChild(btn)
+        parts.forEach(function (part) {
+          part = part || {}
+          if (part.kind !== 'blank' && part.type !== 'blank') {
+            var inlineLine = document.createElement('div')
+            inlineLine.className = 'lf-fill-line'
+            var inlineInput = renderPart(inlineLine, part, block, enabled)
+            if (inlineInput) inputs.push(inlineInput)
+            wrap.appendChild(inlineLine)
+            submitLine = inlineLine
+            return
+          }
+          if (isCardFill(block) || part.hint || part.label || part.formula) {
+            renderBlankRow(wrap, part, block, enabled, inputs)
+            return
+          }
+          var plainLine = document.createElement('div')
+          plainLine.className = 'lf-fill-line'
+          var plainInput = renderPart(plainLine, part, block, enabled)
+          if (plainInput) inputs.push(plainInput)
+          wrap.appendChild(plainLine)
+          submitLine = plainLine
+        })
+      } else {
+        var row = document.createElement('div')
+        row.className = 'lf-fill-line'
+        parts.forEach(function (part) {
+          var input = renderPart(row, part, block, enabled)
+          if (input) inputs.push(input)
+        })
+        wrap.appendChild(row)
+        submitLine = row
       }
 
-      setTimeout(function () {
-        if (inputs[0] && typeof inputs[0].focus === 'function') {
-          inputs[0].focus()
+      if (enabled) {
+        if (!window.AIClassComponent || typeof window.AIClassComponent.createSubmitButton !== 'function') {
+          throw new Error('[fill widget] AIClassComponent.createSubmitButton is required')
         }
-      }, 0)
+        var btn = window.AIClassComponent.createSubmitButton({
+          text: block.submitText || '提交',
+          onClick: function () { submitFill(inputs, block, ctx) }
+        })
+        if (rowLayout) {
+          var actions = document.createElement('div')
+          actions.className = 'lf-fill-actions'
+          actions.appendChild(btn)
+          wrap.appendChild(actions)
+        } else if (submitLine) {
+          submitLine.appendChild(btn)
+        }
+
+        setTimeout(function () {
+          if (inputs[0] && typeof inputs[0].focus === 'function') {
+            inputs[0].focus()
+          }
+        }, 0)
+      }
+
+      el.appendChild(wrap)
     }
 
-    el.appendChild(wrap)
+    var enabled = AIClassInteractionGate.isInteractive(block, runtime)
+    render(enabled)
+
+    // 供容器在步骤推进后原地揭示答案（镜像 choice 的 _choiceApi.setRevealed）
+    el._fillApi = {
+      hasAnswer: hasAnswer,
+      setRevealed: function (state) {
+        render(state ? false : AIClassInteractionGate.isInteractive(block, runtime))
+      }
+    }
   })
 })()

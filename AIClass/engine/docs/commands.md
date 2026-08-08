@@ -1,6 +1,6 @@
 # Engine 命令
 
-在 **`engine/`** 目录执行。课程源位于仓库根 **`../courses/`**。
+在 **`engine/`** 目录执行。课程源（course.json 注册表 + outline/plan + debug）位于仓库根 **`_output_/{grade}/<courseId>/`**。
 
 ## 依赖
 
@@ -31,16 +31,9 @@ copy workspace.example.json workspace.local.json
 
 `workspace.local.json` 不提交。
 
-## 制作看板
+## 进度维护
 
-```bash
-npm run pipeline:board -- <courseId>
-npm run pipeline:board -- <courseId> --sync
-npm run pipeline:board -- <courseId> --gate <problemId> figureOk
-npm run pipeline:board -- <courseId> --complete-preview <problemId>
-```
-
-生成/更新 `../courses/<courseId>/pipeline.md`。对话入口：Skill **course-pipeline**（说「看板」）。**唯一人工门禁**：图形 OK。
+`pipeline:board` / `pipeline.json` 已删除；制作进度由 agent 直接读 `_output_/{grade}/<courseId>/<problemId>/` 判断（outline/plan/figure-spec 的存在性与状态）。figure 人工验收落点为 `figure-spec.json` 的 `status: "confirmed"`。
 
 ## 图形审图预览
 
@@ -62,13 +55,13 @@ npm run course:preview -- <courseId>
 npm run course:export -- <courseId> --zip
 ```
 
-MD 输入时 `<courseId>` = md 文件名去 `.md`（见 [`skills/lesson-plan/naming-from-md.md`](../../skills/lesson-plan/naming-from-md.md)）。
+MD 输入时 `<courseId>` = md 文件名去 `.md`（见 [`skills/outline/naming.md`](../../skills/outline/naming.md)）。
 
-- 生成物：`../courses/<id>/.generated/`
+- 生成物：`_output_/{grade}/<id>/.generated/`
 - 导出：`dist/<id>/`；ZIP：`artifacts/`
 - 导出后可将 debug 壳同步到 monorepo 根 `debug/`（gitignore）
 
-建课编排 SOP：[`docs/production/create-course.md`](../../docs/production/create-course.md)。
+建课编排 SOP：根 [`skills/README.md`](../../../skills/README.md)。
 
 ## 测试
 

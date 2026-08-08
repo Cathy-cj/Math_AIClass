@@ -1,0 +1,11 @@
+{
+  "name": "aiclass-platform",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "content:check": "node tools/content/run.mjs check",
+    "content:check:figure": "node tools/content/run.mjs check --profile figure",
+    "content:check:text": "node tools/content/run.mjs check --profile text",
+    "content:check:calculation": "node tools/content/run.mjs check --profile calculation"
+  }
+}

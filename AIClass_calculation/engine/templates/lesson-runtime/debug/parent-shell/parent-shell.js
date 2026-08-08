@@ -298,7 +298,6 @@
     if (action.conceptSheet) return 'concept-close'
     if (action.sideEffect) return 'fx'
     if (action.conceptInterrupt) return 'concept'
-    if (action.kind === 'feynman') return 'feynman'
     return 'main'
   }
 
@@ -341,7 +340,6 @@
     if (helpData.zones) {
       ;(helpData.zones.topic || []).forEach(rememberModule)
       ;(helpData.zones.main || []).forEach(rememberModule)
-      ;(helpData.zones.feynman || []).forEach(rememberModule)
     }
 
     function add(item) {
@@ -391,32 +389,6 @@
           addStep(step, 'main', mod.title, mod.moduleId, index)
         })
       })
-      ;(helpData.zones.feynman || []).forEach(function (mod) {
-        if (mod.enterAction) {
-          add(buildCatalogItem({
-            name: mod.enterAction,
-            zone: 'feynman',
-            tag: 'feynman',
-            moduleTitle: mod.title,
-            moduleId: mod.moduleId,
-            stepId: '进入',
-            description: (helpMap[mod.enterAction] && helpMap[mod.enterAction].description) ||
-              '费曼屏 · 进入'
-          }))
-        }
-        if (mod.exitAction) {
-          add(buildCatalogItem({
-            name: mod.exitAction,
-            zone: 'feynman',
-            tag: 'feynman',
-            moduleTitle: mod.title,
-            moduleId: mod.moduleId,
-            stepId: '退出',
-            description: (helpMap[mod.exitAction] && helpMap[mod.exitAction].description) ||
-              '费曼屏 · 退出'
-          }))
-        }
-      })
     } else if (helpData.modules && helpData.modules.length) {
       helpData.modules.forEach(function (mod) {
         ;(mod.steps || []).forEach(function (step, index) {
@@ -450,18 +422,6 @@
       tag: 'sys',
       description: '重置课件到初始状态'
     }))
-
-    ;['快问快答_关闭'].forEach(function (name) {
-      if (used[name]) return
-      var help = helpMap[name] || {}
-      add(buildCatalogItem({
-        name: name,
-        zone: 'sys',
-        tag: 'sys',
-        stepId: '关闭',
-        description: help.description || ''
-      }))
-    })
 
     return items
   }
@@ -608,7 +568,6 @@
       hub: [],
       topic: {},
       main: {},
-      feynman: [],
       concept: [],
       flat: [],
       sys: []
@@ -617,7 +576,6 @@
     list.forEach(function (item) {
       if (item.zone === 'sys') byZone.sys.push(item)
       else if (item.zone === 'hub') byZone.hub.push(item)
-      else if (item.zone === 'feynman') byZone.feynman.push(item)
       else if (item.zone === 'concept') byZone.concept.push(item)
       else if (item.zone === 'flat') byZone.flat.push(item)
       else if (item.zone === 'topic') {
@@ -650,7 +608,6 @@
     Object.keys(byZone.main).forEach(function (title) {
       addZone('正文 · ' + title, 'main', byZone.main[title], 'zone:main:' + title)
     })
-    addZone('费曼', 'feynman', byZone.feynman, 'zone:feynman')
     addZone('概念插播', 'concept', byZone.concept, 'zone:concept')
     addZone('未分组', 'sys', byZone.flat, 'zone:flat')
     addZone('系统', 'sys', byZone.sys, 'zone:sys')
@@ -735,15 +692,22 @@
       return
     }
 
-    if (d.type === 'feynman_shown') {
+    if (d.type === 'quick_qa_opened' || d.type === 'quick_qa_question_shown' ||
+        d.type === 'quick_qa_answer_shown' || d.type === 'quick_qa_hidden') {
+      // 快问快答回包不带 action 字段，靠 pendingKey 推进进度，
+      // 否则“下一步”永远重发同一个快问快答动作而卡死。
       appendLog(d, 'ok')
-      setStat('feynman_shown · id=' + d.feynmanId, 'ok')
-      return
-    }
-
-    if (d.type === 'feynman_dismissed') {
-      appendLog(d, 'ok')
-      setStat('feynman_dismissed · id=' + d.feynmanId, 'ok')
+      setStat(d.type + (d.qaId ? ' · ' + d.qaId : ''), 'ok')
+      if (pendingKey) {
+        doneKeys[pendingKey] = true
+        currentKey = pendingKey
+        pendingKey = null
+        var qaItem = catalog.find(function (c) { return itemKey(c) === currentKey })
+        if (qaItem && qaItem.moduleId) currentModuleId = qaItem.moduleId
+        renderList()
+        updateStepStat()
+        scrollCurrentIntoView()
+      }
       return
     }
 
